@@ -87,15 +87,20 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       .then((res) => res.json())
       .then((result) => {
         setIsLoading(false);
-        if (result.status === 200 || (result.status === 1 && result.success !== false)) {
-          storeUser(result.data);
-          if (result.data.userType === "ADMIN") {
-            navigation.replace("dashboard", { authUser: result.data });
+        if (result.success) { // <- use success field
+          if (result.data) {
+            storeUser(result.data);
+
+            if (result.data.userType === "ADMIN") {
+              navigation.replace("dashboard", { authUser: result.data });
+            } else {
+              navigation.replace("tab", { user: result.data });
+            }
           } else {
-            navigation.replace("tab", { user: result.data });
+            setError("No user data returned");
           }
         } else {
-          setError(result.message);
+          setError(result.message || "Something went wrong");
         }
       })
       .catch((err) => {
@@ -137,7 +142,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           <CustomInput
             value={email}
             setValue={setEmail}
-            placeholder={"Username"}
+            placeholder={"Email"}
             placeholderTextColor={colors.muted}
             radius={5}
           />
