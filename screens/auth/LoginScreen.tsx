@@ -16,6 +16,7 @@ import CustomButton from "../../components/CustomButton";
 import CustomInput from "../../components/CustomInput";
 import CustomLoader from "../../components/CustomLoader";
 import { colors, network } from "../../constants";
+import {login} from "../../api/authAPI";
 
 interface LoginScreenProps {
   navigation: any; // nếu bạn muốn kỹ hơn, dùng type từ react-navigation
@@ -62,8 +63,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   // };
 
   //method to validate the user credentials and navigate to Home Screen / Dashboard
-  const loginHandle = () => {
-    if (!isConnected) return setError("No internet connection");
+  const loginHandle = async () => {
+    // if (!isConnected) return setError("No internet connection");
 
     setIsLoading(true);
     //[check validation] -- Start
@@ -77,37 +78,26 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     if (password.length < 6) return setError("Password must be at least 6 characters long");
     //[check validation] -- End
 
-    const requestOptions: RequestInit = {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    };
-
-    fetch(network.serverip + "/login", requestOptions)
-      .then((res) => res.json())
-      .then((result) => {
-        setIsLoading(false);
-        if (result.success) { // <- use success field
-          if (result.data) {
-            storeUser(result.data);
-
-            if (result.data.userType === "ADMIN") {
-              navigation.replace("dashboard", { authUser: result.data });
-            } else {
-              navigation.replace("tab", { user: result.data });
-            }
-          } else {
-            setError("No user data returned");
-          }
-        } else {
-          setError(result.message || "Something went wrong");
-        }
-      })
-      .catch((err) => {
-        setIsLoading(false);
-        setError(err.message);
+    try {
+    const result = await login({ username: email, password: password });
+    console.log(result)
+    if (result.data.access_token) {
+      // Store the entire user object, not just token
+      await storeUser({
+        token: result.data.access_token,
+        user: result.data.user
       });
-  };
+      navigation.replace("tab", { user: result.data.user });
+    } else {
+      setError("Invalid credentials. Please try again.");
+    }
+  } catch (err: any) {
+    console.error("Login error:", err);
+    setError(err.response?.data?.message || "Login failed. Please try again.");
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <KeyboardAvoidingView
