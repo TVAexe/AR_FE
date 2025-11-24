@@ -1,7 +1,7 @@
 import axios from "@/utils/Axios";
 
 export interface LoginData {
-    username: string;
+    email: string;
     password: string;
 }
 

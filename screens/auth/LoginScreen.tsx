@@ -79,7 +79,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     //[check validation] -- End
 
     try {
-    const result = await login({ username: email, password: password });
+    const result = await login({ email: email, password: password });
     console.log(result)
     if (result.data.access_token) {
       // Store the entire user object, not just token
