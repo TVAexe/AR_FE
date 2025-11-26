@@ -68,6 +68,3 @@ attachInterceptors(axiosInstance);
 
 
 export default axiosInstance;
-
-
-
