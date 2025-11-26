@@ -1,5 +1,5 @@
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import { Ionicons,MaterialIcons } from "@expo/vector-icons";
+import React,{ useState } from "react";
 import {
   Alert,
   StatusBar,
@@ -8,15 +8,16 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { deleteUser } from "../../api/profileAPI";
 import OptionList from "../../components/OptionList/OptionList";
 import UserProfileCard from "../../components/UserProfileCard/UserProfileCard";
-import { colors, network } from "../../constants";
+import { colors } from "../../constants";
 
 const MyAccountScreen = ({ navigation, route }) => {
   const [showBox, setShowBox] = useState(true);
   const [error, setError] = useState("");
   const { user } = route.params;
-  const userID = user["_id"];
+  const userID = user.id;
 
   //method for alert
   const showConfirmDialog = (id) => {
@@ -38,27 +39,20 @@ const MyAccountScreen = ({ navigation, route }) => {
     );
   };
 
-  var requestOptions = {
-    method: "GET",
-    redirect: "follow",
-  };
+  // Using profileAPI.deleteUser (axios) instead of manual fetch
 
   //method to delete the account using API call
-  const DeleteAccontHandle = (userID) => {
-    let fetchURL = network.serverip + "/delete-user?id=" + String(userID);
-    console.log(fetchURL);
-    fetch(fetchURL, requestOptions)
-      .then((response) => response.json())
-      .then((result) => {
-        if (result.success == true) {
-          console.log(result.data);
-          navigation.navigate("login");
-        } else {
-          setError(result.message);
-        }
-      })
-      .catch((error) => console.log("error", error));
+  const DeleteAccontHandle = async (userID) => {
+    try {
+      await deleteUser(String(userID));
+      navigation.navigate("login");
+    } catch (err) {
+      console.error("Delete user error:", err);
+      setError(err.response?.data?.message || err.message || "Failed to delete account");
+      setShowBox(true);
+    }
   };
+
   return (
     <View style={styles.container}>
       <StatusBar style="auto"></StatusBar>

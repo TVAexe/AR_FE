@@ -1,10 +1,11 @@
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import React, { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, network } from "../../constants";
-import CustomInput from "../../components/CustomInput";
-import CustomButton from "../../components/CustomButton";
+import React,{ useState } from "react";
+import { StyleSheet,Text,TouchableOpacity,View } from "react-native";
+import { updatePassword } from "../../api/profileAPI"; // added
 import CustomAlert from "../../components/CustomAlert/CustomAlert";
+import CustomButton from "../../components/CustomButton";
+import CustomInput from "../../components/CustomInput";
+import { colors } from "../../constants";
 
 const UpdatePasswordScreen = ({ navigation, route }) => {
   const { userID } = route.params;
@@ -14,43 +15,31 @@ const UpdatePasswordScreen = ({ navigation, route }) => {
   const [confirmPassword, setCconfirmPassword] = useState("");
   const [alertType, setAlertType] = useState("error");
 
-  var myHeaders = new Headers();
-  myHeaders.append("Content-Type", "application/json");
-
-  var raw = JSON.stringify({
-    password: currnetPassword,
-    newPassword: newPassword,
-  });
-
-  var requestOptions = {
-    method: "POST",
-    headers: myHeaders,
-    body: raw,
-    redirect: "follow",
-  };
-
   // method to update the password by the check the current password
-  const updatePasswordHandle = () => {
+  const updatePasswordHandle = async () => {
     if (currnetPassword == newPassword) {
+      setAlertType("error");
       setError("You are not allowed to set the previous used password");
+      return;
     } else if (newPassword != confirmPassword) {
+      setAlertType("error");
       setError("Password not matched");
-    } else {
-      setError("");
-      fetch(
-        network.serverip + "/reset-password?id=" + String(userID),
-        requestOptions
-      ) // API call
-        .then((response) => response.json())
-        .then((result) => {
-          setAlertType("success");
-          setError("Password is updated successfully ");
-        })
-        .catch((error) => {
-          setAlertType("error");
-          setError(error.message);
-          console.log("error", error.message);
-        });
+      return;
+    }
+
+    setError("");
+    try {
+      await updatePassword({ oldPassword: currnetPassword, newPassword });
+      setAlertType("success");
+      setError("Password is updated successfully");
+      // clear inputs
+      setCurrentPassword("");
+      setNewPassword("");
+      setCconfirmPassword("");
+    } catch (err) {
+      setAlertType("error");
+      setError(err?.response?.data?.message || err?.message || "Failed to update password");
+      console.log("error", err);
     }
   };
 
