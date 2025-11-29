@@ -6,8 +6,7 @@ const BASE_URL = "http://192.168.69.102:8080";
 const TIMEOUT = 10000;
 const COMMON_HEADERS = {
  'Content-Type': 'application/json',
- Accept: 'application/json',
- 'X-Application-ID': process.env.NEXT_PUBLIC_APPLICATION_ID_HEADER,
+ Accept: 'application/json'
 };
 
 
