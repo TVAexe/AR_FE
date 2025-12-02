@@ -25,7 +25,7 @@ const PromotionSlider = ({ slides }) => {
         renderItem={({ item }) => (
           <View style={styles.slide}>
             {/* <Image source={{ uri: item }} style={styles.image} /> */}
-            <Image source={{ item }} style={styles.image} contentFit="cover"/>
+            <Image source={item} style={styles.image} contentFit="cover" />
           </View>
         )}
       />

@@ -1,22 +1,18 @@
 import React from "react";
 import {
-  View,
-  Text,
-  TouchableOpacity,
   Image,
   StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../../constants";
 import cartIcon from "../../assets/icons/cart_beg.png";
 import easybuylogo from "../../assets/logo/logo.png";
+import { colors } from "../../constants";
 
 const HomeHeader = ({ navigation, cartproduct }) => {
   return (
     <View style={styles.topBarContainer}>
-      <TouchableOpacity disabled>
-        <Ionicons name="menu" size={30} color={colors.muted} />
-      </TouchableOpacity>
       <View style={styles.topbarlogoContainer}>
         <Image source={easybuylogo} style={styles.logo} />
         <Text style={styles.toBarText}>EasyBuy</Text>
