@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
+  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -41,7 +42,7 @@ const HomeScreen = ({ navigation, route }) => {
     navigation.navigate("productdetail", { product: product });
   };
 
-  const handleAddToCat = (product) => {
+  const handleAddToCart = (product) => {
     addCartItem(product);
   };
 
@@ -51,12 +52,15 @@ const HomeScreen = ({ navigation, route }) => {
   };
 
   const fetchProduct = () => {
+    console.log("Fetching products from:", `${network.serverip}/products`);
     fetch(`${network.serverip}/products`, headerOptions)
       .then((response) => response.json())
       .then((result) => {
+        console.log("Fetch result:", result);
         if (result.success) {
           setProducts(result.data);
           setError("");
+          console.log("Products loaded:", result.data.length);
 
           let payload = [];
           result.data.forEach((cat, index) => {
@@ -67,11 +71,12 @@ const HomeScreen = ({ navigation, route }) => {
           setSearchItems(payload);
         } else {
           setError(result.message);
+          console.log("Fetch error message:", result.message);
         }
       })
       .catch((error) => {
         setError(error.message);
-        console.log("error", error);
+        console.log("Fetch error:", error);
       });
   };
 
@@ -82,13 +87,15 @@ const HomeScreen = ({ navigation, route }) => {
   };
 
   useEffect(() => {
+    console.log("HomeScreen useEffect - user:", user);
     convertToJSON(user);
     fetchProduct();
   }, []);
 
   return (
-    <View style={styles.container}>
-      <StatusBar />
+    <SafeAreaView style={styles.container}>
+      <StatusBar backgroundColor={colors.light} barStyle="dark-content" translucent={false} />
+
 
       <HomeHeader navigation={navigation} cartproduct={cartproduct} />
 
@@ -115,13 +122,13 @@ const HomeScreen = ({ navigation, route }) => {
           <NewArrivals
             products={products}
             handleProductPress={handleProductPress}
-            handleAddToCat={handleAddToCat}
-            refeshing={refeshing}
+            handleAddToCat={handleAddToCart}
+            refreshing={refeshing}
             handleOnRefresh={handleOnRefresh}
           />
         </ScrollView>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -130,7 +137,7 @@ export default HomeScreen;
 const styles = StyleSheet.create({
   container: {
     width: "100%",
-    flexDirection: "row",
+    flexDirection: "column",
     backgroundColor: colors.light,
     alignItems: "flex-start",
     justifyContent: "flex-start",

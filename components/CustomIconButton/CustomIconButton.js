@@ -1,7 +1,7 @@
-import { StyleSheet, Text, TouchableOpacity, Image } from "react-native";
 import React from "react";
+import { StyleSheet, Text, TouchableOpacity } from "react-native";
 import { colors } from "../../constants";
-import garmentsIcon from "../../assets/icons/garments.png";
+
 
 const CustomIconButton = ({ text, image, onPress, active }) => {
   return (
@@ -12,7 +12,6 @@ const CustomIconButton = ({ text, image, onPress, active }) => {
       ]}
       onPress={onPress}
     >
-      <Image source={image} style={styles.buttonIcon} />
       <Text
         style={[
           styles.buttonText,
@@ -25,7 +24,9 @@ const CustomIconButton = ({ text, image, onPress, active }) => {
   );
 };
 
+
 export default CustomIconButton;
+
 
 const styles = StyleSheet.create({
   container: {
@@ -41,10 +42,15 @@ const styles = StyleSheet.create({
     margin: 5,
   },
   buttonText: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.muted,
     fontWeight: "bold",
+    textAlign: "center",
+    flexShrink: 1,
+    flexWrap: "wrap",
   },
+
+
   buttonIcon: {
     height: 20,
     width: 35,

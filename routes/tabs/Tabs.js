@@ -107,6 +107,10 @@ const Tabs = ({ navigation, route }) => {
         name="home"
         component={HomeScreen}
         initialParams={{ user: user }}
+        options={{
+          headerShown: false,
+          title: ""
+        }}
         tabBarOptions={{
           style: {
             position: "absolute",

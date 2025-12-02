@@ -1,8 +1,6 @@
-import { Image } from "expo-image";
 import React, { useState } from "react";
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Searchbar } from "react-native-paper";
-import scanIcon from "../../assets/icons/scan_icons.png";
 import { colors } from "../../constants";
 
 const SearchBar = ({ searchItems, handleProductPress }) => {
@@ -41,7 +39,10 @@ const SearchBar = ({ searchItems, handleProductPress }) => {
           value={query}
           onChangeText={onChangeSearch}
           style={styles.searchInput}
-          inputStyle={{ fontSize: 14 }}
+          inputStyle={{
+            fontSize: 14,
+            paddingBottom: 20,
+          }}
         />
 
         {showDropdown && filteredItems.length > 0 && (
@@ -61,34 +62,27 @@ const SearchBar = ({ searchItems, handleProductPress }) => {
           </View>
         )}
       </View>
-
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.scanButton}>
-          <Text style={styles.scanButtonText}>Scan</Text>
-          <Image source={scanIcon} style={{ width: 20, height: 20 }} />
-        </TouchableOpacity>
-      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   searchContainer: {
-    marginTop: 10,
-    padding: 10,
+    marginTop: 15,
+    padding: 5,
     width: "100%",
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-evenly",
+    justifyContent: "center",
   },
 
   inputContainer: {
-    width: "70%",
+    width: "95%",
   },
 
   searchInput: {
     borderRadius: 10,
-    height: 40,
+    height: 45,
     backgroundColor: colors.white,
     elevation: 3,
   },
@@ -112,29 +106,6 @@ const styles = StyleSheet.create({
 
   dropdownItemText: {
     color: colors.dark,
-  },
-
-  buttonContainer: {
-    width: "20%",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  scanButton: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: colors.primary,
-    borderRadius: 10,
-    height: 40,
-    width: "100%",
-  },
-
-  scanButtonText: {
-    fontSize: 15,
-    color: colors.light,
-    fontWeight: "bold",
-    marginRight: 5,
   },
 });
 
