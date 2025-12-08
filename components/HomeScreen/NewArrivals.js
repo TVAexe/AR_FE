@@ -6,7 +6,7 @@ import { colors, network } from "../../constants";
 const NewArrivals = ({
   products,
   handleProductPress,
-  handleAddToCat,
+  handleAddToCart,
   refeshing,
   handleOnRefresh,
 }) => {
@@ -39,12 +39,13 @@ const NewArrivals = ({
                 style={{ marginLeft: 5, marginBottom: 10, marginRight: 5 }}
               >
                 <ProductCard
-                  name={item.title}
-                  image={`${network.serverip}/uploads/${item.image}`}
-                  price={item.price}
-                  quantity={item.quantity}
-                  onPress={() => handleProductPress(item)}
-                  onPressSecondary={() => handleAddToCat(item)}
+                    cardSize="large"
+                    name={item.name || ''}
+                    image={item.imageUrl[0] || ''}
+                    price={item.oldPrice || 0}
+                    quantity={item.quantity || 0}
+                    onPress={() => handleProductPress(item)}
+                    onPressSecondary={() => handleAddToCart(item)}
                 />
               </View>
             )}

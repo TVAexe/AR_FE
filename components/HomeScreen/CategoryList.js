@@ -12,15 +12,17 @@ const CategoryList = ({ category, navigation }) => {
         style={styles.flatListContainer}
         horizontal={true}
         data={category}
-        keyExtractor={(item, index) => `${item}-${index}`}
+        keyExtractor={(item, index) => item._id || item.id || index.toString()}
         renderItem={({ item, index }) => (
           <View style={{ marginBottom: 10 }} key={index}>
             <CustomIconButton
               key={index}
-              text={item.title}
-              image={item.image}
+              text={item.name}
               onPress={() =>
-                navigation.jumpTo("categories", { categoryID: item })
+                navigation.navigate("categories", {
+                categoryID: item.id,
+                resetState: Date.now(),
+              })
               }
             />
           </View>

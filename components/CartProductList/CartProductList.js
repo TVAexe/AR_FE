@@ -1,10 +1,10 @@
-import { StyleSheet, Text, View, Image, TouchableOpacity } from "react-native";
 import React from "react";
-import { colors, network } from "../../constants";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { colors } from "../../constants";
 
-import Swipeable from "react-native-gesture-handler/Swipeable";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import Swipeable from "react-native-gesture-handler/Swipeable";
 
 const CartProductList = ({
   image,
@@ -14,6 +14,8 @@ const CartProductList = ({
   handleDelete,
   onPressDecrement,
   onPressIncrement,
+  isChecked = false,
+  onToggleCheck,
 }) => {
   const rightSwipe = () => {
     return (
@@ -33,15 +35,23 @@ const CartProductList = ({
       <View style={styles.containerOuter}>
         <Swipeable renderRightActions={rightSwipe}>
           <View style={styles.container}>
+            <TouchableOpacity
+              style={styles.checkboxContainer}
+              onPress={onToggleCheck}
+            >
+              <MaterialCommunityIcons
+                name={isChecked ? "checkbox-marked" : "checkbox-blank-outline"}
+                size={22}
+                color={isChecked ? colors.primary : colors.muted}
+              />
+            </TouchableOpacity>
             <View style={styles.imageContainer}>
               <Image source={{ uri: image }} style={styles.productImage} />
             </View>
             <View style={styles.productInfoContainer}>
               <Text style={styles.productTitle}>{title}</Text>
-              <Text style={styles.productQuantitySm}>x{quantity}</Text>
               <View style={styles.productListBottomContainer}>
                 <Text style={styles.productPrice}>{price * quantity} $</Text>
-
                 <View style={styles.counter}>
                   <TouchableOpacity
                     style={styles.counterButtonContainer}
@@ -98,11 +108,13 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   productInfoContainer: {
-    padding: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 5,
     height: "100%",
+    flex: 1,
     display: "flex",
     flexDirection: "column",
-    justifyContent: "space-between",
+    justifyContent: "space-around",
     alignItems: "flex-start",
   },
   productTitle: {
@@ -116,7 +128,8 @@ const styles = StyleSheet.create({
     color: colors.muted,
   },
   productPrice: {
-    fontSize: 15,
+    fontSize: 14,
+    fontWeight: "bold",
     color: colors.primary,
   },
   deleteButtonContainer: {
@@ -130,44 +143,55 @@ const styles = StyleSheet.create({
     width: 70,
   },
   productListBottomContainer: {
-    width: "auto",
-    paddingRight: 10,
+    width: "100%",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    gap: 5,
   },
   counter: {
     backgroundColor: colors.white,
-    width: 150,
-    marginLeft: 20,
-    padding: 5,
-    borderRadius: 5,
-    borderBottomRightRadius: 10,
-    display: "flex",
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 5,
+    gap: 8,
   },
   counterButtonContainer: {
     display: "flex",
-    width: 30,
-    height: 30,
-    marginLeft: 10,
-    marginRight: 10,
+    width: 24,
+    height: 24,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: colors.muted,
-    borderRadius: 15,
+    borderRadius: 12,
     elevation: 2,
   },
   counterButtonText: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: "bold",
     color: colors.white,
   },
   counterCountText: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: "bold",
+  },
+  deleteButton: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    padding: 5,
+    borderRadius: 5,
+    backgroundColor: colors.light,
+    elevation: 2,
+  },
+  checkboxContainer: {
+    paddingHorizontal: 5,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  deleteIconButton: {
+    padding: 5,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

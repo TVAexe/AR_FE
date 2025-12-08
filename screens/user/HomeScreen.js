@@ -1,21 +1,28 @@
+import { getCategories } from "@/api/categoriesAPI";
+import { getProducts } from "@/api/productsAPI";
 import React, { useEffect, useState } from "react";
 import {
+  Dimensions,
+  FlatList,
+  RefreshControl,
   SafeAreaView,
-  ScrollView,
   StatusBar,
   StyleSheet,
-  View,
+  Text,
+  View
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { bindActionCreators } from "redux";
 import CategoryList from "../../components/HomeScreen/CategoryList";
 import HomeHeader from "../../components/HomeScreen/HomeHeader";
-import NewArrivals from "../../components/HomeScreen/NewArrivals";
 import PromotionSlider from "../../components/HomeScreen/PromotionSlider";
 import SearchBar from "../../components/HomeScreen/SearchBar";
-import { colors, network } from "../../constants";
-import { category, slides } from "../../constants/AppData";
+import ProductCard from "../../components/ProductCard";
+import { colors } from "../../constants";
+import { slides } from "../../constants/AppData";
 import * as actionCreaters from "../../states/actionCreaters/actionCreaters";
+
+const windowWidth = Dimensions.get('window').width;
 
 const HomeScreen = ({ navigation, route }) => {
   const cartproduct = useSelector((state) => state.product);
@@ -25,10 +32,12 @@ const HomeScreen = ({ navigation, route }) => {
 
   const { user } = route.params;
   const [products, setProducts] = useState([]);
-  const [refeshing, setRefreshing] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [userInfo, setUserInfo] = useState({});
   const [searchItems, setSearchItems] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [searchKey, setSearchKey] = useState(0);
 
   const convertToJSON = (obj) => {
     try {
@@ -46,51 +55,60 @@ const HomeScreen = ({ navigation, route }) => {
     addCartItem(product);
   };
 
-  var headerOptions = {
-    method: "GET",
-    redirect: "follow",
-  };
-
-  const fetchProduct = () => {
-    console.log("Fetching products from:", `${network.serverip}/products`);
-    fetch(`${network.serverip}/products`, headerOptions)
-      .then((response) => response.json())
-      .then((result) => {
-        console.log("Fetch result:", result);
-        if (result.success) {
-          setProducts(result.data);
-          setError("");
-          console.log("Products loaded:", result.data.length);
-
-          let payload = [];
-          result.data.forEach((cat, index) => {
-            let searchableItem = { ...cat, id: index + 1, name: cat.title };
-            payload.push(searchableItem);
-          });
-
-          setSearchItems(payload);
-        } else {
-          setError(result.message);
-          console.log("Fetch error message:", result.message);
-        }
-      })
-      .catch((error) => {
-        setError(error.message);
-        console.log("Fetch error:", error);
+  const fetchProduct = async () => {
+    try {
+      const response = await getProducts({
+        page: 0,
+        size: 100,
+        categoryId: null,
       });
+
+      const productsData = response.data?.result || response.result || response.data || response || [];
+      setProducts(productsData);
+      setError("");
+
+      let payload = [];
+      productsData.forEach((product, index) => {
+        let searchableItem = { ...product, id: index + 1, name: product.name };
+        payload.push(searchableItem);
+      });
+
+      setSearchItems(payload);
+    } catch (error) {
+      setError(error.message);
+      console.log("Can't fetch products:", error);
+    }
   };
+
+  const fetchCategories = async () => {
+    try {
+      const data = await getCategories();
+      setCategories(data.data);
+
+    } catch (error) {
+      console.log("Error fetching categories:", error);
+    }
+  }
 
   const handleOnRefresh = () => {
     setRefreshing(true);
     fetchProduct();
+    fetchCategories();
     setRefreshing(false);
   };
 
   useEffect(() => {
-    console.log("HomeScreen useEffect - user:", user);
     convertToJSON(user);
     fetchProduct();
+    fetchCategories();
   }, []);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      setSearchKey(prev => prev + 1);
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -100,33 +118,52 @@ const HomeScreen = ({ navigation, route }) => {
       <HomeHeader navigation={navigation} cartproduct={cartproduct} />
 
       <View style={styles.bodyContainer}>
-        {/* Search bar với dropdown cần zIndex cao */}
         <View style={{ zIndex: 50 }}>
           <SearchBar
+            key={searchKey}
             searchItems={searchItems}
             handleProductPress={handleProductPress}
           />
         </View>
 
-        <ScrollView
-          nestedScrollEnabled={true}
-          contentContainerStyle={{ paddingTop: 0 }}
-          style={{ zIndex: 1 }}
-        >
-          <View style={{ marginTop: 10 }}>
-            <PromotionSlider slides={slides} />
-          </View>
-
-          <CategoryList category={category} navigation={navigation} />
-
-          <NewArrivals
-            products={products}
-            handleProductPress={handleProductPress}
-            handleAddToCat={handleAddToCart}
-            refreshing={refeshing}
-            handleOnRefresh={handleOnRefresh}
-          />
-        </ScrollView>
+        <FlatList
+          data={products}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleOnRefresh} />
+          }
+          keyExtractor={(item, index) => `${index}-${item._id || item.id}`}
+          numColumns={2}
+          contentContainerStyle={{ paddingBottom: 20, alignItems: 'center' }}
+          ListHeaderComponent={
+            <>
+              <View style={{ marginTop: 10 }}>
+                <PromotionSlider slides={slides} />
+              </View>
+              <CategoryList category={categories} navigation={navigation} />
+              <View style={styles.titleContainer}>
+                <Text style={styles.titleText}>Products</Text>
+              </View>
+            </>
+          }
+          renderItem={({ item: product }) => (
+            <View
+              style={[
+                styles.productCartContainer,
+                { width: (windowWidth - windowWidth * 0.1) / 2 },
+              ]}
+            >
+              <ProductCard
+                cardSize="large"
+                name={product.name || ''}
+                image={product.imageUrl?.[0] || ''}
+                price={product.oldPrice || 0}
+                quantity={product.quantity || 0}
+                onPress={() => handleProductPress(product)}
+                onPressSecondary={() => handleAddToCart(product)}
+              />
+            </View>
+          )}
+        />
       </View>
     </SafeAreaView>
   );
@@ -148,5 +185,18 @@ const styles = StyleSheet.create({
     flexDirection: "column",
     flex: 1,
     paddingBottom: 0,
+  },
+  productCartContainer: {
+    margin: 5,
+  },
+  titleContainer: {
+    width: "100%",
+    marginLeft: 10,
+    marginTop: 10,
+    marginBottom: 5,
+  },
+  titleText: {
+    fontSize: 20,
+    fontWeight: "bold",
   },
 });
