@@ -1,171 +1,278 @@
+import { cancelOrder, getOrders } from "@/api/ordersAPI";
+import CustomLoader from "@/components/CustomLoader";
+import OrderList from "@/components/OrderList/OrderList";
+import { colors } from "@/constants";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
+  Alert,
+  FlatList,
   RefreshControl,
-  ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  ActivityIndicator, // Thêm component hiển thị loading xoay vòng ở dưới đáy
 } from "react-native";
-import CustomAlert from "../../components/CustomAlert/CustomAlert";
-import { colors, network } from "../../constants";
-// import ProgressDialog from "react-native-progress-dialog";
-import * as SecureStore from "expo-secure-store";
-import CustomLoader from "../../components/CustomLoader";
-import OrderList from "../../components/OrderList/OrderList";
+
+const ORDER_STATUSES = [
+  "PENDING",
+  "CONFIRMED",
+  "SHIPPED",
+  "SHIPPING",
+  "DELIVERED",
+  "CANCELLED",
+];
+
+const PAGE_SIZE = 5; // Số lượng đơn hàng mỗi lần tải
 
 const MyOrderScreen = ({ navigation, route }) => {
-  const { user } = route.params;
-  const [isloading, setIsloading] = useState(false);
-  const [label, setLabel] = useState("Please wait...");
-  const [refeshing, setRefreshing] = useState(false);
-  const [alertType, setAlertType] = useState("error");
-  const [error, setError] = useState("");
+  const user = route.params?.user;
+  
+  // Ref chặn vòng lặp (giữ nguyên từ bản fix trước)
+  const processedTimestamp = useRef(0);
+
+  const [isLoading, setIsLoading] = useState(false); // Loading toàn màn hình (lần đầu)
+  const [isLoadingMore, setIsLoadingMore] = useState(false); // Loading khi kéo xuống dưới
   const [orders, setOrders] = useState([]);
-  const [UserInfo, setUserInfo] = useState({});
+  const [refreshing, setRefreshing] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState("PENDING");
+  
+  // --- PAGINATION STATES ---
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
 
-  //method to remove the authUser from aysnc storage and navigate to login
-  const logout = async () => {
-    await SecureStore.deleteItemAsync("authUser");
-    navigation.replace("login");
-  };
+  // ====================================================
+  // HÀM GỌI API ĐA NĂNG (Hỗ trợ cả Load mới và Load thêm)
+  // ====================================================
+  const fetchOrders = async (statusToFetch, pageNum = 0, isAppend = false) => {
+    if (!user || !user.id) return;
 
-  //method to convert the authUser to json object
-  const convertToJSON = (obj) => {
+    // Nếu đang tải thêm mà hết dữ liệu hoặc đang tải dở thì dừng
+    if (isAppend && (!hasMore || isLoadingMore)) return;
+
     try {
-      setUserInfo(JSON.parse(obj));
-    } catch (e) {
-      setUserInfo(obj);
-    }
-  };
+      // Set trạng thái loading phù hợp
+      if (isAppend) {
+        setIsLoadingMore(true);
+      } else {
+        setIsLoading(true);
+      }
 
-  //method to convert the authUser to json object and return token
-  const getToken = (obj) => {
-    try {
-      setUserInfo(JSON.parse(obj));
-    } catch (e) {
-      setUserInfo(obj);
-      return user.token;
-    }
-    return UserInfo.token;
-  };
-
-  //method call on pull refresh
-  const handleOnRefresh = () => {
-    setRefreshing(true);
-    fetchOrders();
-    setRefreshing(false);
-  };
-
-  //method to navigate to order detail screen of a specific order
-  const handleOrderDetail = (item) => {
-    navigation.navigate("myorderdetail", {
-      orderDetail: item,
-      Token: UserInfo.token,
-    });
-  };
-
-  //fetch order from server using API call
-  const fetchOrders = () => {
-    var myHeaders = new Headers();
-    let token = getToken(user);
-    myHeaders.append("x-auth-token", token);
-
-    var requestOptions = {
-      method: "GET",
-      headers: myHeaders,
-      redirect: "follow",
-    };
-    setIsloading(true);
-    fetch(`${network.serverip}/orders`, requestOptions)
-      .then((response) => response.json())
-      .then((result) => {
-        if (result?.err === "jwt expired") {
-          logout();
-        }
-        if (result.success) {
-          setOrders(result.data);
-          setError("");
-        }
-        setIsloading(false);
-      })
-      .catch((error) => {
-        setIsloading(false);
-        setError(error.message);
-        console.log("error", error);
+      const response = await getOrders({
+        userId: user.id,
+        status: statusToFetch,
+        page: pageNum,
+        pageSize: PAGE_SIZE,
       });
+
+      const newOrders = response.data.result || [];
+
+      // Kiểm tra xem còn dữ liệu để tải tiếp không
+      if (newOrders.length < PAGE_SIZE) {
+        setHasMore(false);
+      } else {
+        setHasMore(true);
+      }
+
+      // Cập nhật danh sách đơn hàng
+      if (isAppend) {
+        // Nếu là tải thêm: Nối danh sách cũ + mới
+        setOrders((prev) => [...prev, ...newOrders]);
+      } else {
+        // Nếu là làm mới: Ghi đè danh sách mới
+        setOrders(newOrders);
+      }
+      
+      // Cập nhật trang hiện tại
+      setPage(pageNum);
+
+    } catch (err) {
+      console.log("Fetch error:", err);
+    } finally {
+      setIsLoading(false);
+      setIsLoadingMore(false);
+      setRefreshing(false);
+    }
   };
 
-  //convert authUser to Json object and fetch orders on initial render
+  // ===============================================
+  // LOGIC XỬ LÝ KHI NHẬN TÍN HIỆU TỪ MÀN HÌNH CHI TIẾT
+  // ===============================================
   useEffect(() => {
-    convertToJSON(user);
-    fetchOrders();
-  }, []);
+    const { action, timestamp } = route.params || {};
+
+    if (action === "CANCEL_SUCCESS" && timestamp) {
+      if (timestamp > processedTimestamp.current) {
+        processedTimestamp.current = timestamp;
+
+        setTimeout(() => {
+          setSelectedStatus("CANCELLED");
+          // Khi chuyển tab do hủy đơn, reset về trang 0
+          fetchOrders("CANCELLED", 0, false);
+        }, 500); 
+      }
+    } else {
+      // Load lần đầu tiên
+      if (orders.length === 0 && !isLoading) {
+        fetchOrders(selectedStatus, 0, false);
+      }
+    }
+  }, [route.params]);
+
+  // ===============================================
+  // CÁC HÀM SỰ KIỆN NGƯỜI DÙNG
+  // ===============================================
+
+  // 1. Kéo xuống để làm mới (Pull to Refresh) -> Reset về trang 0
+  const handleRefresh = () => {
+    setRefreshing(true);
+    setHasMore(true); // Reset trạng thái còn dữ liệu
+    fetchOrders(selectedStatus, 0, false);
+  };
+
+  // 2. Chuyển Tab -> Reset về trang 0
+  const handleChangeStatus = (status) => {
+    setSelectedStatus(status);
+    setOrders([]); // Xóa danh sách cũ để tránh nhấp nháy
+    setHasMore(true);
+    fetchOrders(status, 0, false);
+  };
+
+  // 3. Kéo xuống đáy để tải thêm (Load More) -> Tăng trang lên 1
+  const handleLoadMore = () => {
+    if (hasMore && !isLoading && !isLoadingMore) {
+      const nextPage = page + 1;
+      fetchOrders(selectedStatus, nextPage, true);
+    }
+  };
+
+  // 4. Logic Hủy đơn tại chỗ
+  const confirmCancelOrder = (orderId) => {
+    Alert.alert(
+      "Confirm Cancellation",
+      "Are you sure you want to cancel this order?",
+      [
+        { text: "No", style: "cancel" },
+        {
+          text: "Yes, cancel",
+          style: "destructive",
+          onPress: () => handleCancelOrder(orderId),
+        },
+      ]
+    );
+  };
+
+  const handleCancelOrder = async (orderId) => {
+    try {
+      setIsLoading(true);
+      await cancelOrder(orderId);
+      Alert.alert("Success", "Order has been cancelled.");
+      // Sau khi hủy, load lại từ đầu danh sách hiện tại
+      handleRefresh();
+    } catch (err) {
+      Alert.alert("Error", err.message || "Failed to cancel order");
+      setIsLoading(false);
+    }
+  };
+
+  // Footer Component: Hiển thị vòng xoay khi đang tải thêm
+  const renderFooter = () => {
+    if (!isLoadingMore) return <View style={{ height: 20 }} />;
+    return (
+      <View style={{ paddingVertical: 20 }}>
+        <ActivityIndicator size="small" color={colors.primary} />
+      </View>
+    );
+  };
+
+  if (!user) {
+    return (
+      <View style={[styles.container, styles.center]}>
+        <Text>User information missing.</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{marginTop: 20}}>
+            <Text style={{color: 'blue'}}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <StatusBar></StatusBar>
-      {/* <ProgressDialog visible={isloading} label={label} /> */}
-      <CustomLoader visible={isloading} label={label}/>
-      <View style={styles.topBarContainer}>
-        <TouchableOpacity
-          onPress={() => {
-            navigation.goBack();
-          }}
-        >
-          <Ionicons
-            name="arrow-back-circle-outline"
-            size={30}
-            color={colors.muted}
+      {/* Chỉ hiện Loader toàn màn hình khi tải trang đầu tiên */}
+      <CustomLoader visible={isLoading && page === 0} label="Loading..." />
+
+      <View style={styles.topBar}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back-circle-outline" size={30} color={colors.muted} />
+        </TouchableOpacity>
+      </View>
+
+      <Text style={styles.title}>My Orders</Text>
+
+      {/* Tabs List */}
+      <View style={{ height: 60 }}>
+        <FlatList
+          horizontal
+          data={ORDER_STATUSES}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ padding: 10 }}
+          keyExtractor={(item) => item}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={[
+                styles.statusTab,
+                selectedStatus === item && styles.activeStatusTab,
+              ]}
+              onPress={() => handleChangeStatus(item)}
+            >
+              <Text
+                style={[
+                  styles.statusTabText,
+                  selectedStatus === item && styles.activeStatusTabText,
+                ]}
+              >
+                {item}
+              </Text>
+            </TouchableOpacity>
+          )}
+        />
+      </View>
+
+      {/* DANH SÁCH ĐƠN HÀNG */}
+      <FlatList
+        data={orders}
+        keyExtractor={(item, index) => item.orderId.toString() + index} // Thêm index để tránh trùng key
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+        contentContainerStyle={{ paddingBottom: 20 }}
+        
+        // --- CẤU HÌNH LOAD MORE ---
+        onEndReached={handleLoadMore} // Gọi hàm khi kéo xuống đáy
+        onEndReachedThreshold={0.5} // Gọi khi còn cách đáy 50% chiều dài
+        ListFooterComponent={renderFooter} // Hiển thị loader ở đáy
+        
+        ListEmptyComponent={
+          !isLoading && (
+            <View style={styles.empty}>
+              <Text style={styles.emptyText}>No orders found in {selectedStatus}.</Text>
+            </View>
+          )
+        }
+        renderItem={({ item }) => (
+          <OrderList
+            item={item}
+            onPress={() =>
+              navigation.navigate("myorderdetail", {
+                orderDetail: item,
+                user: user,
+              })
+            }
+            onCancel={() => confirmCancelOrder(item.orderId)}
           />
-        </TouchableOpacity>
-        <View></View>
-        <TouchableOpacity onPress={() => handleOnRefresh()}>
-          <Ionicons name="cart-outline" size={30} color={colors.primary} />
-        </TouchableOpacity>
-      </View>
-      <View style={styles.screenNameContainer}>
-        <View>
-          <Text style={styles.screenNameText}>My Orders</Text>
-        </View>
-        <View>
-          <Text style={styles.screenNameParagraph}>
-            Your order and your order status
-          </Text>
-        </View>
-      </View>
-      <CustomAlert message={error} type={alertType} />
-      {orders.length == 0 ? (
-        <View style={styles.ListContiainerEmpty}>
-          <Text style={styles.secondaryTextSmItalic}>
-            "There are no orders placed yet."
-          </Text>
-        </View>
-      ) : (
-        <ScrollView
-          style={{ flex: 1, width: "100%", padding: 20 }}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refeshing}
-              onRefresh={handleOnRefresh}
-            />
-          }
-        >
-          {orders.map((order, index) => {
-            return (
-              <OrderList
-                item={order}
-                key={index}
-                onPress={() => handleOrderDetail(order)}
-              />
-            );
-          })}
-          <View style={styles.emptyView}></View>
-        </ScrollView>
-      )}
+        )}
+      />
     </View>
   );
 };
@@ -173,66 +280,48 @@ const MyOrderScreen = ({ navigation, route }) => {
 export default MyOrderScreen;
 
 const styles = StyleSheet.create({
-  container: {
-    width: "100%",
-    flexDirecion: "row",
-    backgroundColor: colors.light,
-    alignItems: "center",
-    justifyContent: "flex-start",
-    flex: 1,
-  },
-  topBarContainer: {
-    width: "100%",
-    display: "flex",
+  container: { flex: 1, backgroundColor: colors.light },
+  center: { justifyContent: 'center', alignItems: 'center', flex: 1 },
+  topBar: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    padding: 20,
   },
-  toBarText: {
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  screenNameContainer: {
-    padding: 20,
-    paddingTop: 0,
-    paddingBottom: 0,
-    width: "100%",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "flex-start",
-    alignItems: "flex-start",
-  },
-  screenNameText: {
-    fontSize: 30,
-    fontWeight: "800",
+  title: {
+    fontSize: 28,
+    fontWeight: "700",
+    paddingHorizontal: 20,
+    marginBottom: 4,
     color: colors.muted,
   },
-  screenNameParagraph: {
-    marginTop: 5,
-    fontSize: 15,
-  },
-  bodyContainer: {
-    width: "100%",
-    flexDirecion: "row",
-    backgroundColor: colors.light,
-    alignItems: "center",
-    justifyContent: "flex-start",
-    flex: 1,
-  },
-  emptyView: {
-    height: 20,
-  },
-  ListContiainerEmpty: {
-    width: "100%",
-    display: "flex",
+  statusTab: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: "#EEE",
+    marginHorizontal: 5,
+    height: 36,
     justifyContent: "center",
-    alignItems: "center",
-    flex: 1,
   },
-  secondaryTextSmItalic: {
+  activeStatusTab: {
+    backgroundColor: colors.primary,
+  },
+  statusTabText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "gray",
+  },
+  activeStatusTabText: {
+    color: "white",
+  },
+  empty: {
+    marginTop: 40,
+    alignItems: "center",
+  },
+  emptyText: {
     fontStyle: "italic",
-    fontSize: 15,
+    fontSize: 16,
     color: colors.muted,
   },
 });

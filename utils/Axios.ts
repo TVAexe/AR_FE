@@ -2,7 +2,7 @@
 import axios, { AxiosInstance } from 'axios';
 
 
-const BASE_URL = "http://10.11.112.128:8080";
+const BASE_URL = "http://192.168.31.176:8080";
 const TIMEOUT = 10000;
 const COMMON_HEADERS = {
  'Content-Type': 'application/json',
