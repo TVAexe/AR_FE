@@ -1,7 +1,7 @@
-import { StyleSheet, Text, TouchableOpacity, View, Image } from "react-native";
-import React from "react";
-import { colors, network } from "../../constants";
 import { Ionicons } from "@expo/vector-icons";
+import React from "react";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { colors } from "../../constants";
 
 const ProductCard = ({
   name,
@@ -25,7 +25,7 @@ const ProductCard = ({
           <Text style={styles.secondaryTextSm}>{`${name.substring(
             0,
             10
-          )}..`}</Text>
+          )}`}</Text>
           <Text style={styles.primaryTextSm}>{price}$</Text>
         </View>
         <View>
@@ -89,6 +89,7 @@ const styles = StyleSheet.create({
   secondaryTextSm: {
     fontSize: 16,
     fontWeight: "bold",
+    textTransform: "capitalize",
   },
   primaryTextSm: {
     fontSize: 15,

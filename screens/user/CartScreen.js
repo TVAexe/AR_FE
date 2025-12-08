@@ -1,27 +1,27 @@
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import React, { useEffect, useState } from "react";
 import {
-  StyleSheet,
   Image,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
   TouchableOpacity,
   View,
-  StatusBar,
-  Text,
-  ScrollView,
 } from "react-native";
-import React, { useEffect, useState } from "react";
-import { Ionicons } from "@expo/vector-icons";
+import { useDispatch, useSelector } from "react-redux";
+import { bindActionCreators } from "redux";
 import cartIcon from "../../assets/icons/cart_beg_active.png";
-import { colors, network } from "../../constants";
 import CartProductList from "../../components/CartProductList/CartProductList";
 import CustomButton from "../../components/CustomButton";
-import { MaterialIcons } from "@expo/vector-icons";
-import { useSelector, useDispatch } from "react-redux";
+import { colors } from "../../constants";
 import * as actionCreaters from "../../states/actionCreaters/actionCreaters";
-import { bindActionCreators } from "redux";
 
 const CartScreen = ({ navigation }) => {
   const cartproduct = useSelector((state) => state.product);
   const [totalPrice, setTotalPrice] = useState(0);
   const [refresh, setRefresh] = useState(false);
+  const [checkedItems, setCheckedItems] = useState({});
   const dispatch = useDispatch();
 
   const { removeCartItem, increaseCartItemQuantity, decreaseCartItemQuantity } =
@@ -45,17 +45,33 @@ const CartScreen = ({ navigation }) => {
     if (quantity > 1) {
       decreaseCartItemQuantity({ id: id, type: "decrease" });
       setRefresh(!refresh);
+    } else {
+      deleteItem(id);
     }
   };
 
-  //calcute and the set the total price whenever the value of carproduct change
+  //method to toggle checkbox
+  const toggleCheckItem = (id) => {
+    setCheckedItems(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+
+  //calcute and the set the total price for only checked items
   useEffect(() => {
     setTotalPrice(
       cartproduct.reduce((accumulator, object) => {
-        return accumulator + object.price * object.quantity;
+        if (checkedItems[object._id]) {
+          return accumulator + object.price * object.quantity;
+        }
+        return accumulator;
       }, 0)
     );
-  }, [cartproduct, refresh]);
+  }, [cartproduct, refresh, checkedItems]);
+
+  //count checked items
+  const checkedCount = Object.values(checkedItems).filter(Boolean).length;
 
   return (
     <View style={styles.container}>
@@ -98,10 +114,12 @@ const CartScreen = ({ navigation }) => {
             <CartProductList
               key={index}
               index={index}
-              image={`${network.serverip}/uploads/${item.image}`}
+              image={item.imageUrl?.[0] || ''}
               title={item.title}
               price={item.price}
               quantity={item.quantity}
+              isChecked={checkedItems[item._id] || false}
+              onToggleCheck={() => toggleCheckItem(item._id)}
               onPressIncrement={() => {
                 increaseQuantity(
                   item._id,
@@ -130,21 +148,25 @@ const CartScreen = ({ navigation }) => {
             />
           </View>
           <View>
-            <Text style={styles.cartBottomPrimaryText}>Total</Text>
+            <Text style={styles.cartBottomPrimaryText}>Total ({checkedCount} items)</Text>
             <Text style={styles.cartBottomSecondaryText}>{totalPrice}$</Text>
           </View>
         </View>
         <View style={styles.cartBottomRightContainer}>
-          {cartproduct.length > 0 ? (
+          {checkedCount > 0 ? (
             <CustomButton
               text={"Checkout"}
-              onPress={() => navigation.navigate("checkout")}
+              onPress={() => {
+                // Filter only checked items for checkout
+                const selectedItems = cartproduct.filter(item => checkedItems[item._id]);
+                navigation.navigate("checkout", { selectedItems });
+              }}
             />
           ) : (
             <CustomButton
               text={"Checkout"}
               disabled={true}
-              onPress={() => navigation.navigate("checkout")}
+              onPress={() => { }}
             />
           )}
         </View>
@@ -208,7 +230,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     flexDirection: "column",
     alignItems: "center",
-    width: "30%",
+    width: "40%",
     height: "100%",
   },
   cartBottomRightContainer: {
@@ -217,16 +239,17 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     flexDirection: "column",
     alignItems: "center",
-    width: "70%",
+    width: "60%",
     height: "100%",
   },
   cartBottomPrimaryText: {
-    fontSize: 15,
+    fontSize: 12,
     fontWeight: "bold",
   },
   cartBottomSecondaryText: {
-    fontSize: 12,
+    fontSize: 18,
     fontWeight: "bold",
+    color: colors.primary,
   },
   emptyView: {
     width: "100%",

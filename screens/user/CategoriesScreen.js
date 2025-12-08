@@ -26,8 +26,7 @@ import { colors } from "../../constants";
 import * as actionCreaters from "../../states/actionCreaters/actionCreaters";
 
 const CategoriesScreen = ({ navigation, route }) => {
-    const { categoryID } = route.params;
-
+    const { categoryID, resetState } = route.params || {};
     const [isLoading, setLoading] = useState(true);
     const [products, setProducts] = useState([]);
     const [foundItems, setFoundItems] = useState([]);
@@ -48,12 +47,6 @@ const CategoriesScreen = ({ navigation, route }) => {
         try {
             const { data } = await getCategories();
             setCategories(data);
-
-            if (!selectedTab) {
-                const firstCategoryId = data[0]?.id || data[0]?._id;
-                console.log("Selected tab set to:", firstCategoryId);
-                setSelectedTab(String(firstCategoryId));
-            }
         } catch (error) {
         }
     };
@@ -67,9 +60,7 @@ const CategoriesScreen = ({ navigation, route }) => {
                 categoryId: selectedTab ? Number(selectedTab) : null,
             })
 
-            // Handle different API response structures
             const productsData = response.data?.result || response.result || response.data || response || [];
-
             setProducts(productsData);
             setFoundItems(productsData);
             setLoading(false)
@@ -79,47 +70,42 @@ const CategoriesScreen = ({ navigation, route }) => {
         }
     };
 
-    // Pull to refresh
     const handleOnRefresh = () => {
         setRefreshing(true);
         fetchProducts();
         setRefreshing(false);
     };
 
-    // Navigate to product detail
     const handleProductPress = (product) => {
         navigation.navigate("productdetail", { product });
     };
 
-    // Add product to cart
     const handleAddToCart = (product) => {
         addCartItem(product);
     };
 
-    // Filter products by search input
-
-
-    // Fetch on initial render
     useEffect(() => {
         fetchCategories();
     }, []);
 
-    // Fetch products when selectedTab changes
+    useEffect(() => {
+        if (categoryID) {
+            setSelectedTab(String(categoryID));
+        }
+    }, [categoryID, resetState]);
+
+    useEffect(() => {
+        if (categories.length > 0 && !selectedTab && !categoryID) {
+            setSelectedTab(String(categories[0].id));
+        }
+    }, [categories]);
+
     useEffect(() => {
         if (selectedTab) {
+            setLoading(true);
             fetchProducts();
         }
     }, [selectedTab]);
-
-    // Update selectedTab when navigating with categoryID
-    useEffect(() => {
-        const unsubscribe = navigation.addListener("focus", () => {
-            if (categoryID) {
-                setSelectedTab(categoryID);
-            }
-        });
-        return unsubscribe;
-    }, [navigation, categoryID]);
 
     return (
         <View style={styles.container}>
@@ -129,9 +115,6 @@ const CategoriesScreen = ({ navigation, route }) => {
                 <TouchableOpacity onPress={() => navigation.jumpTo("home")}>
                     <Ionicons name="arrow-back-circle-outline" size={30} color={colors.muted} />
                 </TouchableOpacity>
-
-                <View />
-
                 <TouchableOpacity
                     style={styles.cartIconContainer}
                     onPress={() => navigation.navigate("cart")}
@@ -165,7 +148,6 @@ const CategoriesScreen = ({ navigation, route }) => {
                                 text={tab.name.charAt(0).toUpperCase() + tab.name.slice(1)}
                                 active={selectedTab === tabId}
                                 onPress={() => {
-                                    console.log("Tab selected:", tabId, "Tab name:", tab.name);
                                     setSelectedTab(tabId);
                                 }}
                             />
@@ -176,10 +158,8 @@ const CategoriesScreen = ({ navigation, route }) => {
                 {(() => {
                     const filteredItems = foundItems.filter((p) => {
                         const productCategoryId = String(p?.category?.id || p?.categoryId);
-                        console.log("Product category ID:", productCategoryId, "Selected tab:", selectedTab, "Match:", productCategoryId === String(selectedTab));
                         return productCategoryId === String(selectedTab);
                     });
-                    console.log("Filtered items count:", filteredItems.length, "Total items:", foundItems.length);
                     return filteredItems.length === 0;
                 })() ? (
                     <View style={styles.noItemContainer}>
@@ -264,6 +244,7 @@ const styles = StyleSheet.create({
     cartIconContainer: {
         justifyContent: "center",
         alignItems: "center",
+        width: 40,
     },
     cartItemCountContainer: {
         position: "absolute",
@@ -279,11 +260,10 @@ const styles = StyleSheet.create({
     },
     cartItemCountText: {
         color: colors.white,
-        fontWeight: "bold",
-        fontSize: 10,
-    },
-    productCartContainer: {
-        justifyContent: "center",
+        cartIconContainer: {
+            justifyContent: "center",
+            alignItems: "center",
+        }, justifyContent: "center",
         alignItems: "center",
         borderRadius: 10,
         margin: 5,
