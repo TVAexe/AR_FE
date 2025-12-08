@@ -48,6 +48,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     flexShrink: 1,
     flexWrap: "wrap",
+    textTransform: "capitalize",
   },
 
 
