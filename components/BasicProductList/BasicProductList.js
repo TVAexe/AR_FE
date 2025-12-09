@@ -1,23 +1,31 @@
-import { StyleSheet, Text, View } from "react-native";
 import React from "react";
+import { Image, StyleSheet, Text, View } from "react-native";
 import { colors } from "../../constants";
-import { Ionicons } from "@expo/vector-icons";
 
-const BasicProductList = ({ title, price, quantity }) => {
+const BasicProductList = ({ title, price, oldPrice, quantity, image, category }) => {
   return (
     <View style={styles.container}>
       <View style={styles.innerContainer}>
-        <View style={styles.IconContainer}>
-          <Ionicons name="square" size={30} color={colors.muted} />
-        </View>
+        {/* PRODUCT IMAGE */}
+        <Image source={{ uri: image }} style={styles.productImage} />
+
+        {/* PRODUCT INFO */}
         <View style={styles.productInfoContainer}>
           <Text style={styles.secondaryText}>{title}</Text>
-          <Text>x{quantity}</Text>
+          <Text style={styles.categoryText}>{category}</Text>
+          <Text style={styles.quantityText}>x{quantity}</Text>
         </View>
       </View>
-      <View>
-        <Text style={styles.primaryText}>{quantity * price}$</Text>
+
+      {/* TOTAL PRICE */}
+      <View style={styles.priceRow}>
+        {oldPrice !== price && (
+          <Text style={styles.oldPrice}>{oldPrice}$</Text>
+        )}
+        <Text style={styles.newPrice}>{price}$</Text>
       </View>
+
+
     </View>
   );
 };
@@ -26,45 +34,74 @@ export default BasicProductList;
 
 const styles = StyleSheet.create({
   container: {
-    display: "flex",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     width: "100%",
     backgroundColor: colors.white,
-    height: 70,
+    height: 90,
     borderBottomWidth: 1,
     borderBottomColor: colors.light,
-    padding: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 0,
   },
+
   innerContainer: {
-    display: "flex",
     flexDirection: "row",
-    justifyContent: "center",
     alignItems: "center",
   },
-  productInfoContainer: {
-    justifyContent: "center",
-    alignItems: "flex-start",
-    marginLeft: 10,
-  },
-  IconContainer: {
-    display: "flex",
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
+
+  productImage: {
+    width: 70,     // to hơn
+    height: 70,
+    borderRadius: 8,
     backgroundColor: colors.light,
-    height: 40,
-    width: 40,
-    borderRadius: 5,
   },
-  primaryText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: colors.primary,
+
+  productInfoContainer: {
+    marginLeft: 10,
+    justifyContent: "center",
   },
+
   secondaryText: {
     fontSize: 15,
-    fontWeight: "600",
+    fontWeight: "semibold",
+  },
+
+  categoryText: {
+    fontSize: 13,
+    color: colors.muted,
+    marginTop: 1,
+  },
+
+  quantityText: {
+    fontSize: 13,
+    marginTop: 2,
+    color: colors.muted,
+  },
+
+  priceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6, // tạo khoảng cách giữa hai giá
+  },
+
+  oldPrice: {
+    fontSize: 13,
+    color: "#999",         // xám
+    textDecorationLine: "line-through",
+    fontWeight: "400",     // không in đậm
+  },
+
+  newPrice: {
+    fontSize: 16,
+    fontWeight: "semibold",
+    color: colors.primary,
+  },
+
+  primaryText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: colors.primary,
   },
 });

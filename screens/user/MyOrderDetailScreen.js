@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
+  Alert,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -8,401 +9,304 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import CustomAlert from "../../components/CustomAlert/CustomAlert";
-import { colors } from "../../constants";
-// import ProgressDialog from "react-native-progress-dialog";
+
+import { cancelOrder as apiCancelOrder } from "@/api/ordersAPI";
 import BasicProductList from "../../components/BasicProductList/BasicProductList";
 import CustomLoader from "../../components/CustomLoader";
-// import StepIndicator from "react-native-step-indicator";
-import CustomStepIndicator from "../../components/CustomStepIndicator";
+import { colors } from "../../constants";
 
 const MyOrderDetailScreen = ({ navigation, route }) => {
-  const { orderDetail } = route.params;
-  const [isloading, setIsloading] = useState(false);
-  const [label, setLabel] = useState("Loading..");
-  const [error, setError] = useState("");
-  const [alertType, setAlertType] = useState("error");
+  const { orderDetail, user } = route.params;
+
+  const totalItems = orderDetail?.items?.reduce(
+    (sum, item) => sum + item.quantity,
+    0
+  );
+
+  const [isLoading, setIsLoading] = useState(false);
   const [totalCost, setTotalCost] = useState(0);
-  const [address, setAddress] = useState("");
-  const [value, setValue] = useState(null);
-  const [statusDisable, setStatusDisable] = useState(false);
-  const labels = ["Processing", "Shipping", "Delivery"];
-  const [trackingState, setTrackingState] = useState(1);
-  // const customStyles = {
-  //   stepIndicatorSize: 25,
-  //   currentStepIndicatorSize: 30,
-  //   separatorStrokeWidth: 2,
-  //   currentStepStrokeWidth: 3,
-  //   stepStrokeCurrentColor: colors.primary,
-  //   stepStrokeWidth: 3,
-  //   stepStrokeFinishedColor: colors.primary,
-  //   stepStrokeUnFinishedColor: "#aaaaaa",
-  //   separatorFinishedColor: "#fe7013",
-  //   separatorUnFinishedColor: "#aaaaaa",
-  //   stepIndicatorFinishedColor: "#fe7013",
-  //   stepIndicatorUnFinishedColor: "#ffffff",
-  //   stepIndicatorCurrentColor: colors.white,
-  //   stepIndicatorLabelFontSize: 13,
-  //   currentStepIndicatorLabelFontSize: 13,
-  //   stepIndicatorLabelCurrentColor: "#fe7013",
-  //   stepIndicatorLabelFinishedColor: "#ffffff",
-  //   stepIndicatorLabelUnFinishedColor: "#aaaaaa",
-  //   labelColor: "#999999",
-  //   labelSize: 13,
-  //   currentStepLabelColor: "#fe7013",
-  // };
 
-  //method to convert time to AM PM format
-  function tConvert(time) {
-    time = time
+  const dateFormat = (dateString) => {
+    if (!dateString) return "-";
+    const t = new Date(dateString);
+    return `${t.getDate().toString().padStart(2, "0")}-${(t.getMonth() + 1)
       .toString()
-      .match(/^([01]\d|2[0-3])(:)([0-5]\d)(:[0-5]\d)?$/) || [time];
-    if (time.length > 1) {
-      time = time.slice(1); // Remove full string match value
-      time[5] = +time[0] < 12 ? "AM" : "PM"; // Set AM/PM
-      time[0] = +time[0] % 12 || 12; // Adjust hours
-    }
-    return time.join("");
-  }
-
-  //method to convert data to dd-mm-yyyy  format
-  const dateFormat = (datex) => {
-    let t = new Date(datex);
-    const date = ("0" + t.getDate()).slice(-2);
-    const month = ("0" + (t.getMonth() + 1)).slice(-2);
-    const year = t.getFullYear();
-    const hours = ("0" + t.getHours()).slice(-2);
-    const minutes = ("0" + t.getMinutes()).slice(-2);
-    const seconds = ("0" + t.getSeconds()).slice(-2);
-    const time = tConvert(`${hours}:${minutes}:${seconds}`);
-    const newDate = `${date}-${month}-${year}, ${time}`;
-
-    return newDate;
+      .padStart(2, "0")}-${t.getFullYear()} ${t
+        .getHours()
+        .toString()
+        .padStart(2, "0")}:${t.getMinutes().toString().padStart(2, "0")}`;
   };
 
-  // set total cost, order detail, order status on initial render
   useEffect(() => {
-    setError("");
-    setAlertType("error");
-    if (orderDetail?.status == "delivered") {
-      setStatusDisable(true);
-    } else {
-      setStatusDisable(false);
-    }
-    setValue(orderDetail?.status);
-    setAddress(
-      orderDetail?.country +
-        ", " +
-        orderDetail?.city +
-        ", " +
-        orderDetail?.shippingAddress
-    );
     setTotalCost(
-      orderDetail?.items.reduce((accumulator, object) => {
-        return (accumulator + object.price) * object.quantity;
-      }, 0)
+      orderDetail?.items?.reduce(
+        (sum, item) =>
+          sum + (item.priceAtPurchase ?? 0) * (item.quantity ?? 0),
+        0
+      )
     );
-    if (orderDetail?.status === "pending") {
-      setTrackingState(1);
-    } else if (orderDetail?.status === "shipped") {
-      setTrackingState(2);
-    } else {
-      setTrackingState(3);
-    }
-  }, []);
+  }, [orderDetail]);
 
-  // const renderStepIndicator = () => {
-  //   return (
-  //     <View style={styles.stepContainer}>
-  //       {labels.map((label, index) => {
-  //         const isActive = index + 1 <= trackingState;
-  //         return (
-  //           <View key={index} style={styles.stepWrapper}>
-  //             <View
-  //               style={[
-  //                 styles.circle,
-  //                 { backgroundColor: isActive ? colors.primary : "#aaa" },
-  //               ]}
-  //             >
-  //               <Text style={styles.circleText}>{index + 1}</Text>
-  //             </View>
-  //             <Text
-  //               style={[
-  //                 styles.stepLabel,
-  //                 { color: isActive ? colors.primary : "#aaa" },
-  //               ]}
-  //             >
-  //               {label}
-  //             </Text>
-  //             {index !== labels.length - 1 && (
-  //               <View
-  //                 style={[
-  //                   styles.line,
-  //                   { backgroundColor: index + 1 < trackingState ? colors.primary : "#aaa" },
-  //                 ]}
-  //               />
-  //             )}
-  //           </View>
-  //         );
-  //       })}
-  //     </View>
-  //   );
-  // };
+  const confirmCancel = () => {
+    Alert.alert(
+      "Cancel order",
+      "Are you sure you want to cancel this order?",
+      [
+        { text: "No", style: "cancel" },
+        { text: "Yes, cancel", style: "destructive", onPress: handleCancel },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const handleCancel = async () => {
+    if (!orderDetail?.orderId) return;
+
+    try {
+      setIsLoading(true);
+      await apiCancelOrder(orderDetail.orderId);
+      setIsLoading(false);
+
+      Alert.alert("Success", "Order cancelled", [
+        {
+          text: "OK",
+          onPress: () => {
+            // === KHẮC PHỤC LỖI ĐƠ ===
+            // Điều hướng về màn hình danh sách với tham số đặc biệt
+            navigation.navigate("myorder", {
+              user: user, // Truyền lại user để đảm bảo an toàn
+              action: "CANCEL_SUCCESS", // Báo hiệu hành động
+              timestamp: Date.now(), // Đánh dấu thời gian để tránh vòng lặp
+              merge: true,
+            });
+          },
+        },
+      ]);
+    } catch (err) {
+      setIsLoading(false);
+      Alert.alert("Error", err?.message ?? "Failed to cancel order");
+    }
+  };
+
+  const isPending = orderDetail?.status === "PENDING";
 
   return (
     <View style={styles.container}>
-      {/* <ProgressDialog visible={isloading} label={label} /> */}
-      <CustomLoader visible={isloading} label={label} />
-      <StatusBar></StatusBar>
+      <CustomLoader visible={isLoading} label={"Processing..."} />
+      <StatusBar />
       <View style={styles.TopBarContainer}>
-        <TouchableOpacity
-          onPress={() => {
-            navigation.goBack();
-          }}
-        >
-          <Ionicons
-            name="arrow-back-circle-outline"
-            size={30}
-            color={colors.muted}
-          />
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back-circle-outline" size={30} color={colors.muted} />
         </TouchableOpacity>
       </View>
       <View style={styles.screenNameContainer}>
-        <View>
-          <Text style={styles.screenNameText}>Order Detials</Text>
-        </View>
-        <View>
-          <Text style={styles.screenNameParagraph}>
-            View all detail about order
-          </Text>
-        </View>
+        <Text style={styles.screenNameText}>Order Details</Text>
+        <Text style={styles.screenNameParagraph}>View all information about this order</Text>
       </View>
-      <CustomAlert message={error} type={alertType} />
-      <ScrollView
-        style={styles.bodyContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.containerNameContainer}>
-          <View>
-            <Text style={styles.containerNameText}>Shipping Address</Text>
+
+      <ScrollView style={styles.bodyContainer}>
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Shipping Address</Text>
+          <Text style={styles.cardContent}>{orderDetail?.shippingAddress}</Text>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Order Information</Text>
+          {orderDetail?.orderId && (
+            <Text style={styles.cardItem}>
+              <Text style={styles.label}>Order ID: </Text>{orderDetail.orderId}
+            </Text>
+          )}
+          {orderDetail?.createdAt && (
+            <Text style={styles.cardItem}>
+              <Text style={styles.label}>Created at: </Text>{dateFormat(orderDetail.createdAt)}
+            </Text>
+          )}
+
+          {orderDetail?.updatedAt && (
+            <Text style={styles.cardItem}>
+              <Text style={styles.label}>Cancelled at: </Text>{dateFormat(orderDetail.updatedAt)}
+            </Text>
+          )}
+
+          {orderDetail?.createdBy && (
+            <Text style={styles.cardItem}>
+              <Text style={styles.label}>Created by: </Text>{orderDetail.createdBy}
+            </Text>
+          )}
+
+          {orderDetail?.updatedBy && (
+            <Text style={styles.cardItem}>
+              <Text style={styles.label}>Cancelled by: </Text>{orderDetail.updatedBy}
+            </Text>
+          )}
+        </View>
+
+        <View style={styles.card}>
+          <View style={styles.packageHeader}>
+            <Text style={styles.cardTitle}>PACKAGE DETAILS</Text>
+            <Text style={styles.statusText}>{orderDetail?.status?.toUpperCase()}</Text>
           </View>
-        </View>
-        <View style={styles.ShipingInfoContainer}>
-          <Text style={styles.secondarytextSm}>{address}</Text>
-          <Text style={styles.secondarytextSm}>{orderDetail?.zipcode}</Text>
-        </View>
-        <View>
-          <Text style={styles.containerNameText}>Order Info</Text>
-        </View>
-        <View style={styles.orderInfoContainer}>
-          <Text style={styles.secondarytextMedian}>
-            Order # {orderDetail?.orderId}
-          </Text>
-          <Text style={styles.secondarytextSm}>
-            Ordered on {dateFormat(orderDetail?.updatedAt)}
-          </Text>
-          {orderDetail?.shippedOn && (
-            <Text style={styles.secondarytextSm}>
-              Shipped on {orderDetail?.shippedOn}
-            </Text>
-          )}
-          {orderDetail?.deliveredOn && (
-            <Text style={styles.secondarytextSm}>
-              Delivered on {orderDetail?.deliveredOn}
-            </Text>
-          )}
-          <View style={{ marginTop: 15, width: "100%" }}>
-            {/* <StepIndicator
-              customStyles={customStyles}
-              currentPosition={trackingState}
-              stepCount={3}
-              labels={labels}
-            /> */}
-            <CustomStepIndicator steps={labels} currentStep={trackingState}/>
+          <View style={styles.productList}>
+            {orderDetail?.items?.map((product, index) => (
+              <BasicProductList
+                key={index}
+                title={product.productName}
+                price={product.priceAtPurchase}
+                oldPrice={product.oldPrice}
+                quantity={product.quantity}
+                image={product.imageUrl}
+                category={product.productType}
+              />
+            ))}
+          </View>
+          <View style={styles.totalRow}>
+            <Text style={styles.label}>Total ({totalItems} items):</Text>
+            <Text style={styles.totalValue}> {totalCost}$</Text>
           </View>
         </View>
 
-        <View style={styles.containerNameContainer}>
-          <View>
-            <Text style={styles.containerNameText}>Package Details</Text>
-          </View>
-        </View>
-        <View style={styles.orderItemsContainer}>
-          <View style={styles.orderItemContainer}>
-            <Text style={styles.orderItemText}>Package</Text>
-            <Text>{value}</Text>
-          </View>
-          <View style={styles.orderItemContainer}>
-            <Text style={styles.orderItemText}>
-              Order on : {orderDetail?.updatedAt}
-            </Text>
-          </View>
-          <ScrollView
-            style={styles.orderSummaryContainer}
-            nestedScrollEnabled={true}
-          >
-            {orderDetail?.items.map((product, index) => (
-              <View key={index}>
-                <BasicProductList
-                  title={product?.productId?.title}
-                  price={product?.price}
-                  quantity={product?.quantity}
-                />
-              </View>
-            ))}
-          </ScrollView>
-          <View style={styles.orderItemContainer}>
-            <Text style={styles.orderItemText}>Total</Text>
-            <Text>{totalCost}$</Text>
-          </View>
-        </View>
-        <View style={styles.emptyView}></View>
+
+        <View style={{ height: 110 }} />
       </ScrollView>
+
+      <View style={styles.footerBar}>
+        {isPending ? (
+          <>
+            <TouchableOpacity style={[styles.footerBtn, styles.cancelBtn]} onPress={confirmCancel}>
+              <Text style={styles.cancelBtnText}>Cancel Order</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.footerBtn, styles.buyBtn]}>
+              <Text style={styles.buyBtnText}>Buy Again</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <TouchableOpacity style={[styles.footerBtnFull, styles.buyBtn]}>
+            <Text style={styles.buyBtnText}>Buy Again</Text>
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 };
 
 export default MyOrderDetailScreen;
 
+// GIỮ NGUYÊN STYLES
+// ================== STYLES ==================
 const styles = StyleSheet.create({
   container: {
-    flexDirecion: "row",
     backgroundColor: colors.light,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
-    paddingBottom: 0,
     flex: 1,
+    margin: 8,
   },
   TopBarContainer: {
     width: "100%",
-    display: "flex",
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    paddingHorizontal: 5,
+    paddingTop: 25,
   },
-
   screenNameContainer: {
-    marginTop: 10,
-    width: "100%",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "flex-start",
-    alignItems: "flex-start",
-    marginBottom: 5,
+    paddingHorizontal: 8,
+    paddingBottom: 10,
   },
   screenNameText: {
     fontSize: 30,
-    fontWeight: "800",
+    fontWeight: "700",
     color: colors.muted,
   },
   screenNameParagraph: {
-    marginTop: 10,
     fontSize: 15,
+    color: "#666",
   },
-  bodyContainer: { flex: 1, width: "100%", padding: 5 },
-  ShipingInfoContainer: {
-    marginTop: 5,
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "flex-start",
+  bodyContainer: {
+    flex: 1,
+    width: "100%",
+  },
+  card: {
     backgroundColor: colors.white,
     padding: 10,
     borderRadius: 10,
-    borderColor: colors.muted,
-    elevation: 5,
-    marginBottom: 10,
-  },
-  containerNameContainer: {
-    marginTop: 10,
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "flex-start",
-  },
-  containerNameText: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: colors.muted,
-  },
-  secondarytextSm: {
-    color: colors.muted,
-    fontSize: 13,
-  },
-  orderItemsContainer: {
-    marginTop: 5,
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "flex-start",
-    backgroundColor: colors.white,
-    padding: 10,
-    borderRadius: 10,
-
-    borderColor: colors.muted,
     elevation: 3,
-    marginBottom: 10,
+    marginTop: 8,
   },
-  orderItemContainer: {
-    width: "100%",
-    display: "flex",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  orderItemText: {
-    fontSize: 13,
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: "600",
     color: colors.muted,
   },
-  orderSummaryContainer: {
-    backgroundColor: colors.white,
-    borderRadius: 10,
-    padding: 10,
-    maxHeight: 220,
-    width: "100%",
-    marginBottom: 5,
+  cardContent: {
+    paddingHorizontal: 10,
+    marginVertical: 3,
+    color: colors.muted,
   },
-  bottomContainer: {
-    backgroundColor: colors.white,
-    width: "110%",
-    height: 70,
-    borderTopLeftRadius: 10,
-    borderTopEndRadius: 10,
-    elevation: 5,
-    display: "flex",
+  cardItem: {
+    paddingHorizontal: 10,
+    marginVertical: 3,
+    color: colors.muted,
+  },
+  packageHeader: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
-
-    paddingLeft: 10,
-    paddingRight: 10,
+    alignItems: "center",
   },
-  orderInfoContainer: {
-    marginTop: 5,
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "flex-start",
+  statusText: {
+    color: "red",
+    fontWeight: "700",
+  },
+  label: {
+    fontWeight: "600",
+    color: colors.dark,
+  },
+  productList: {
     backgroundColor: colors.white,
-    padding: 10,
     borderRadius: 10,
-
-    borderColor: colors.muted,
-    elevation: 1,
-    marginBottom: 10,
   },
-  primarytextMedian: {
+  totalRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    paddingHorizontal: 10,
+    marginTop: 10,
+  },
+  totalValue: {
+    fontWeight: "700",
     color: colors.primary,
-    fontSize: 15,
-    fontWeight: "bold",
   },
-  secondarytextMedian: {
-    color: colors.muted,
-    fontSize: 15,
-    fontWeight: "bold",
+  footerBar: {
+    position: "absolute",
+    bottom: 0,
+    width: "100%",
+    flexDirection: "row",
+    padding: 10,
+    backgroundColor: colors.white,
+    borderTopWidth: 0.5,
+    borderColor: "#ccc",
   },
-  emptyView: {
-    height: 20,
+  footerBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 6,
+    alignItems: "center",
+  },
+  footerBtnFull: {
+    width: "100%",
+    paddingVertical: 14,
+    borderRadius: 6,
+    alignItems: "center",
+  },
+  cancelBtn: {
+    backgroundColor: "#ff4d4f",
+    marginRight: 8,
+  },
+  cancelBtnText: {
+    color: "#fff",
+    fontWeight: "700",
+  },
+  buyBtn: {
+    backgroundColor: colors.primary,
+  },
+  buyBtnText: {
+    color: "#fff",
+    fontWeight: "700",
   },
 });
