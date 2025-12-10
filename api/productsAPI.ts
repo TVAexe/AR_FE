@@ -33,3 +33,21 @@ export const getProducts = async ({
 
     return response.data;
 };
+
+
+export const getProductById = async (id: number) => {
+    const accessToken = await getToken();
+
+    if (!accessToken) {
+        throw new Error("User not logged in");
+    }
+
+    // URL dựa trên giả định endpoint backend là /api/v1/products/{id}
+    const response = await axios.get(`/api/v1/products/${id}`, {
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+        },
+    });
+
+    return response.data;
+};

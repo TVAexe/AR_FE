@@ -17,7 +17,7 @@ import { colors } from "../../constants";
 
 const MyOrderDetailScreen = ({ navigation, route }) => {
   const { orderDetail, user } = route.params;
-
+  
   const totalItems = orderDetail?.items?.reduce(
     (sum, item) => sum + item.quantity,
     0
@@ -71,12 +71,10 @@ const MyOrderDetailScreen = ({ navigation, route }) => {
         {
           text: "OK",
           onPress: () => {
-            // === KHẮC PHỤC LỖI ĐƠ ===
-            // Điều hướng về màn hình danh sách với tham số đặc biệt
             navigation.navigate("myorder", {
-              user: user, // Truyền lại user để đảm bảo an toàn
-              action: "CANCEL_SUCCESS", // Báo hiệu hành động
-              timestamp: Date.now(), // Đánh dấu thời gian để tránh vòng lặp
+              user: user,
+              action: "CANCEL_SUCCESS",
+              timestamp: Date.now(),
               merge: true,
             });
           },
@@ -115,6 +113,12 @@ const MyOrderDetailScreen = ({ navigation, route }) => {
           {orderDetail?.orderId && (
             <Text style={styles.cardItem}>
               <Text style={styles.label}>Order ID: </Text>{orderDetail.orderId}
+            </Text>
+          )}
+          {/* Hiển thị số điện thoại lấy từ user */}
+          {user?.user?.phoneNumber && (
+            <Text style={styles.cardItem}>
+              <Text style={styles.label}>Phone number: </Text>{user.user.phoneNumber}
             </Text>
           )}
           {orderDetail?.createdAt && (
@@ -166,34 +170,27 @@ const MyOrderDetailScreen = ({ navigation, route }) => {
           </View>
         </View>
 
-
         <View style={{ height: 110 }} />
       </ScrollView>
 
-      <View style={styles.footerBar}>
-        {isPending ? (
-          <>
-            <TouchableOpacity style={[styles.footerBtn, styles.cancelBtn]} onPress={confirmCancel}>
-              <Text style={styles.cancelBtnText}>Cancel Order</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.footerBtn, styles.buyBtn]}>
-              <Text style={styles.buyBtnText}>Buy Again</Text>
-            </TouchableOpacity>
-          </>
-        ) : (
-          <TouchableOpacity style={[styles.footerBtnFull, styles.buyBtn]}>
-            <Text style={styles.buyBtnText}>Buy Again</Text>
+      {/* CHỈ HIỆN FOOTER NẾU LÀ ĐƠN PENDING */}
+      {isPending && (
+        <View style={styles.footerBar}>
+          {/* Nút Cancel giờ sẽ full width vì không còn nút Buy Again bên cạnh */}
+          <TouchableOpacity 
+            style={[styles.footerBtnFull, { backgroundColor: "#ff4d4f" }]} 
+            onPress={confirmCancel}
+          >
+            <Text style={styles.cancelBtnText}>Cancel Order</Text>
           </TouchableOpacity>
-        )}
-      </View>
+        </View>
+      )}
     </View>
   );
 };
 
 export default MyOrderDetailScreen;
 
-// GIỮ NGUYÊN STYLES
-// ================== STYLES ==================
 const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.light,

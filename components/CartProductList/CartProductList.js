@@ -10,6 +10,7 @@ const CartProductList = ({
   image,
   title,
   price,
+  oldPrice,
   quantity = 1,
   handleDelete,
   onPressDecrement,
@@ -30,6 +31,7 @@ const CartProductList = ({
       </View>
     );
   };
+
   return (
     <GestureHandlerRootView>
       <View style={styles.containerOuter}>
@@ -49,9 +51,25 @@ const CartProductList = ({
               <Image source={{ uri: image }} style={styles.productImage} />
             </View>
             <View style={styles.productInfoContainer}>
-              <Text style={styles.productTitle}>{title}</Text>
+              <Text style={styles.productTitle} numberOfLines={1}>
+                {title}
+              </Text>
+              
               <View style={styles.productListBottomContainer}>
-                <Text style={styles.productPrice}>{price * quantity} $</Text>
+                
+                {/* --- SỬA TẠI ĐÂY: Hiển thị giá trên cùng 1 hàng --- */}
+                <View style={styles.priceContainer}>
+                  {oldPrice > price && (
+                    <Text style={styles.productOldPrice}>
+                      {(oldPrice * quantity).toFixed(2)}$
+                    </Text>
+                  )}
+                  <Text style={styles.productPrice}>
+                    {(price * quantity).toFixed(2)}$
+                  </Text>
+                </View>
+                {/* ------------------------------------------------ */}
+
                 <View style={styles.counter}>
                   <TouchableOpacity
                     style={styles.counterButtonContainer}
@@ -102,6 +120,7 @@ const styles = StyleSheet.create({
   productImage: {
     width: 100,
     height: 100,
+    resizeMode: "contain",
   },
   imageContainer: {
     backgroundColor: colors.light,
@@ -122,16 +141,26 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: colors.dark,
   },
-  productQuantitySm: {
-    fontSize: 15,
+  
+  // --- STYLE MỚI CHO GIÁ ---
+  priceContainer: {
+    flexDirection: 'row', // Xếp ngang
+    alignItems: 'center', // Căn giữa theo chiều dọc
+  },
+  productOldPrice: {
+    fontSize: 12,
     fontWeight: "bold",
     color: colors.muted,
+    textDecorationLine: "line-through",
+    marginRight: 8, // Khoảng cách với giá mới
   },
   productPrice: {
     fontSize: 14,
     fontWeight: "bold",
     color: colors.primary,
   },
+  // -------------------------
+
   deleteButtonContainer: {
     flexDirection: "row",
     justifyContent: "center",
@@ -175,22 +204,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-  deleteButton: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    padding: 5,
-    borderRadius: 5,
-    backgroundColor: colors.light,
-    elevation: 2,
-  },
   checkboxContainer: {
     paddingHorizontal: 5,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  deleteIconButton: {
-    padding: 5,
     justifyContent: "center",
     alignItems: "center",
   },

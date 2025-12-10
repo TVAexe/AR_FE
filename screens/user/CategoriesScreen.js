@@ -81,9 +81,17 @@ const CategoriesScreen = ({ navigation, route }) => {
     };
 
     const handleAddToCart = (product) => {
-        addCartItem(product);
+        const itemToAdd = {
+            ...product,
+            // Mặc định mua 1
+            quantity: 1,
+            // Lưu tồn kho thực tế để Redux check
+            countInStock: product.quantity
+        };
+        console.log("Adding to cart:", itemToAdd);
+        addCartItem(itemToAdd);
     };
-
+    
     useEffect(() => {
         fetchCategories();
     }, []);
