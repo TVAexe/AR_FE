@@ -231,6 +231,7 @@ const CheckoutScreen = ({ navigation, route }) => {
                 price={product.oldPrice * (1 - (product.saleRate || 0))} 
                 oldPrice={product.oldPrice}
                 quantity={product.quantity}
+                image={product.imageUrl[0] || "https://via.placeholder.com/100"}
               />
             ))}
           </View>

@@ -1,3 +1,4 @@
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   StyleSheet,
   Image,
@@ -12,45 +13,122 @@ import {
   Modal,
   TouchableWithoutFeedback,
 } from "react-native";
-import React, { useState, useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, network } from "../../constants";
 import { useSelector, useDispatch } from "react-redux";
 import { bindActionCreators } from "redux";
+
+import { colors } from "../../constants"; // Bỏ import network vì không dùng nữa
 import * as actionCreaters from "../../states/actionCreaters/actionCreaters";
 import CustomAlert from "../../components/CustomAlert/CustomAlert";
 import { getProductById } from "../../api/productsAPI";
 
 const { width: windowWidth } = Dimensions.get("window");
 
+// =========================================================================
+// SUB-COMPONENTS
+// =========================================================================
+
+const ProductCarousel = ({ images, activeSlide, onScroll }) => (
+  <View style={styles.carouselContainer}>
+    <FlatList
+      data={images}
+      horizontal
+      pagingEnabled
+      showsHorizontalScrollIndicator={false}
+      onScroll={onScroll}
+      keyExtractor={(_, index) => index.toString()}
+      renderItem={({ item }) => (
+        <View style={styles.carouselItem}>
+          <Image
+            source={{ uri: item }}
+            style={styles.carouselImage}
+            onError={(e) => console.log("Lỗi load ảnh:", e.nativeEvent.error)}
+          />
+        </View>
+      )}
+    />
+    <View style={styles.pagination}>
+      {images.map((_, index) => (
+        <View
+          key={index}
+          style={[styles.dot, index === activeSlide ? styles.activeDot : styles.inactiveDot]}
+        />
+      ))}
+    </View>
+  </View>
+);
+
+const PurchaseModal = ({ visible, onClose, product, quantity, setQuantity, onConfirm, actionType, currentPrice, image }) => {
+  if (!visible || !product) return null;
+
+  return (
+    <Modal animationType="slide" transparent={true} visible={visible} onRequestClose={onClose}>
+      <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={onClose}>
+        <TouchableWithoutFeedback>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Image source={{ uri: image }} style={styles.modalThumb} />
+              <View style={styles.modalInfo}>
+                <Text style={styles.modalPrice}>${currentPrice.toFixed(2)}</Text>
+                <Text style={styles.modalStock}>Stock: {product.quantity}</Text>
+              </View>
+              <TouchableOpacity onPress={onClose}>
+                <Ionicons name="close" size={24} color={colors.muted} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.divider} />
+            <View style={styles.quantitySection}>
+              <Text style={styles.sectionTitle}>Quantity</Text>
+              <View style={styles.quantityControl}>
+                <TouchableOpacity style={styles.qtyBtn} onPress={() => setQuantity(q => Math.max(1, q - 1))}>
+                  <Ionicons name="remove" size={20} color={colors.dark} />
+                </TouchableOpacity>
+                <Text style={styles.qtyText}>{quantity}</Text>
+                <TouchableOpacity 
+                  style={styles.qtyBtn} 
+                  onPress={() => setQuantity(q => (q < product.quantity ? q + 1 : q))}
+                >
+                  <Ionicons name="add" size={20} color={colors.dark} />
+                </TouchableOpacity>
+              </View>
+            </View>
+            <TouchableOpacity style={styles.confirmBtn} onPress={onConfirm}>
+              <Text style={styles.confirmBtnText}>
+                {actionType === 'buy' ? "Buy Now" : "Add to Cart"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableWithoutFeedback>
+      </TouchableOpacity>
+    </Modal>
+  );
+};
+
+// =========================================================================
+// MAIN SCREEN
+// =========================================================================
+
 const ProductDetailScreen = ({ navigation, route }) => {
   const { product: initialProduct } = route.params;
-  const cartproduct = useSelector((state) => state.product);
   const dispatch = useDispatch();
   const { addCartItem } = bindActionCreators(actionCreaters, dispatch);
+  const cartProduct = useSelector((state) => state.product);
 
-  // --- STATE ---
   const [productDetail, setProductDetail] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeSlide, setActiveSlide] = useState(0);
   const [error, setError] = useState("");
-
-  // State cho Modal
+  const [activeSlide, setActiveSlide] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
-  const [quantity, setQuantity] = useState(1); // Số lượng khách muốn mua
-  const [actionType, setActionType] = useState(null); // 'cart' hoặc 'buy'
+  const [quantity, setQuantity] = useState(1);
+  const [actionType, setActionType] = useState(null);
 
-  // --- 1. Fetch Data ---
   useEffect(() => {
     const fetchDetail = async () => {
       try {
         setIsLoading(true);
         const productId = initialProduct.id || initialProduct._id;
         const response = await getProductById(productId);
-        
-        // Xử lý dữ liệu trả về
-        const actualProduct = response.data || response;
-        setProductDetail(actualProduct);
+        setProductDetail(response.data || response);
       } catch (err) {
         console.error("Error fetching detail:", err);
         setError("Không thể tải thông tin sản phẩm.");
@@ -61,77 +139,57 @@ const ProductDetailScreen = ({ navigation, route }) => {
     if (initialProduct) fetchDetail();
   }, [initialProduct]);
 
-  // --- 2. Logic Helpers ---
-  const calculatePrice = () => {
+  const currentPrice = useMemo(() => {
     if (!productDetail) return 0;
     if (productDetail.oldPrice && productDetail.saleRate) {
       return productDetail.oldPrice * (1 - productDetail.saleRate);
     }
     return productDetail.oldPrice || 0;
-  };
-  const currentPrice = calculatePrice();
+  }, [productDetail]);
 
-  const getImages = () => {
+  // === ĐOẠN SỬA LẠI ===
+  const productImages = useMemo(() => {
+    // Nếu có ảnh -> dùng luôn mảng đó (vì là link S3 rồi)
     if (productDetail?.imageUrl && productDetail.imageUrl.length > 0) {
-      return productDetail.imageUrl.map(img => `${network.serverip}/uploads/${img}`);
+      return productDetail.imageUrl;
     }
-    return [`${network.serverip}/uploads/default.png`];
-  };
-  const productImages = getImages();
+    // Fallback ảnh rỗng
+    return ["https://via.placeholder.com/400x300.png?text=No+Image"];
+  }, [productDetail]);
+  // ====================
 
-  // --- 3. Handlers ---
-  
-  // Mở Modal
+  const handleScroll = useCallback((event) => {
+    const slide = Math.ceil(
+      event.nativeEvent.contentOffset.x / event.nativeEvent.layoutMeasurement.width
+    );
+    if (slide !== activeSlide) setActiveSlide(slide);
+  }, [activeSlide]);
+
   const openOptionModal = (type) => {
-    // Nếu hết hàng thì không mở modal
     if (!productDetail || productDetail.quantity <= 0) return;
-    
     setActionType(type);
-    setQuantity(1); // Reset về 1 mỗi khi mở modal
+    setQuantity(1);
     setModalVisible(true);
   };
 
-  // Xác nhận hành động
   const handleConfirmAction = () => {
     if (!productDetail) return;
-
-    // --- QUAN TRỌNG: Mapping dữ liệu chuẩn cho Redux ---
     const itemToAdd = {
       ...productDetail,
       id: productDetail.id,
       price: currentPrice,
       image: productDetail.imageUrl?.[0] || "",
-      
-      // Biến này là số lượng USER MUỐN MUA
-      quantity: quantity, 
-
-      // Biến này là TỒN KHO THỰC TẾ (Để Redux kiểm tra không bị Out of Stock ảo)
-      countInStock: productDetail.quantity, 
+      quantity: quantity,
+      countInStock: productDetail.quantity,
       maxQuantity: productDetail.quantity 
     };
-
-    console.log("Sending to Redux:", itemToAdd); // Debug log
-
-    // Gửi sang Redux
     addCartItem(itemToAdd);
-
     setModalVisible(false);
-
     if (actionType === 'buy') {
-      // Điều hướng đến Checkout, truyền kèm mảng chứa item vừa mua
       navigation.navigate("checkout", { items: [itemToAdd] });
     }
   };
 
-  // Logic Slide ảnh
-  const handleScroll = (event) => {
-    const slide = Math.ceil(
-      event.nativeEvent.contentOffset.x / event.nativeEvent.layoutMeasurement.width
-    );
-    if (slide !== activeSlide) setActiveSlide(slide);
-  };
-
-  // --- RENDER ---
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -143,53 +201,26 @@ const ProductDetailScreen = ({ navigation, route }) => {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
-
-      {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={28} color={colors.dark} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Detail</Text>
         <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.navigate("cart")}>
-          {cartproduct.length > 0 && (
+          {cartProduct.length > 0 && (
             <View style={styles.badgeContainer}>
-              <Text style={styles.badgeText}>{cartproduct.length}</Text>
+              <Text style={styles.badgeText}>{cartProduct.length}</Text>
             </View>
           )}
           <Ionicons name="cart-outline" size={28} color={colors.dark} />
         </TouchableOpacity>
       </View>
 
-      {/* BODY SCROLL */}
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-        {/* Carousel */}
-        <View style={styles.carouselContainer}>
-          <FlatList
-            data={productImages}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onScroll={handleScroll}
-            keyExtractor={(item, index) => index.toString()}
-            renderItem={({ item }) => (
-              <View style={{ width: windowWidth, height: 350, alignItems: 'center', justifyContent: 'center' }}>
-                <Image source={{ uri: item }} style={styles.carouselImage} />
-              </View>
-            )}
-          />
-          <View style={styles.pagination}>
-            {productImages.map((_, index) => (
-              <View key={index} style={[styles.dot, index === activeSlide ? styles.activeDot : styles.inactiveDot]} />
-            ))}
-          </View>
-        </View>
-
+        <ProductCarousel images={productImages} activeSlide={activeSlide} onScroll={handleScroll} />
         {error ? <View style={{padding: 20}}><CustomAlert message={error} type="error" /></View> : null}
-
-        {/* Info */}
         <View style={styles.infoContainer}>
           <Text style={styles.productName}>{productDetail?.name}</Text>
-          
           <View style={styles.priceRow}>
             <View style={{flexDirection: 'row', alignItems: 'flex-end'}}>
                <Text style={styles.currentPrice}>${currentPrice.toFixed(2)}</Text>
@@ -203,17 +234,14 @@ const ProductDetailScreen = ({ navigation, route }) => {
               </View>
             )}
           </View>
-
           <View style={styles.divider} />
           <Text style={styles.sectionTitle}>Description</Text>
           <Text style={styles.descriptionText}>{productDetail?.description}</Text>
         </View>
       </ScrollView>
 
-      {/* --- BOTTOM BAR --- */}
       <View style={styles.bottomBar}>
         <View style={styles.bottomBarContent}>
-            {/* Nút Thêm vào giỏ */}
             <TouchableOpacity 
                 style={[styles.actionBtn, styles.cartActionBtn]}
                 onPress={() => openOptionModal('cart')}
@@ -222,10 +250,7 @@ const ProductDetailScreen = ({ navigation, route }) => {
                 <Ionicons name="cart-outline" size={24} color={colors.primary} />
                 <Text style={[styles.actionBtnText, {color: colors.primary}]}>Add to Cart</Text>
             </TouchableOpacity>
-
             <View style={{width: 15}} /> 
-
-            {/* Nút Mua ngay */}
             <TouchableOpacity 
                 style={[styles.actionBtn, styles.buyActionBtn, productDetail?.quantity <= 0 && styles.disabledBtn]}
                 onPress={() => openOptionModal('buy')}
@@ -238,69 +263,17 @@ const ProductDetailScreen = ({ navigation, route }) => {
         </View>
       </View>
 
-      {/* --- MODAL CHỌN SỐ LƯỢNG --- */}
-      <Modal
-        animationType="slide"
-        transparent={true}
+      <PurchaseModal 
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <TouchableOpacity 
-            style={styles.modalOverlay} 
-            activeOpacity={1} 
-            onPress={() => setModalVisible(false)} 
-        >
-            <TouchableWithoutFeedback>
-                <View style={styles.modalContent}>
-                    {/* Header Modal */}
-                    <View style={styles.modalHeader}>
-                        <Image source={{ uri: productImages[0] }} style={styles.modalThumb} />
-                        <View style={styles.modalInfo}>
-                            <Text style={styles.modalPrice}>${currentPrice.toFixed(2)}</Text>
-                            <Text style={styles.modalStock}>Stock: {productDetail?.quantity}</Text>
-                        </View>
-                        <TouchableOpacity onPress={() => setModalVisible(false)}>
-                            <Ionicons name="close" size={24} color={colors.muted} />
-                        </TouchableOpacity>
-                    </View>
-
-                    <View style={styles.divider} />
-
-                    {/* Bộ chọn số lượng */}
-                    <View style={styles.quantitySection}>
-                        <Text style={styles.sectionTitle}>Quantity</Text>
-                        <View style={styles.quantityControl}>
-                            <TouchableOpacity 
-                                style={styles.qtyBtn} 
-                                onPress={() => setQuantity(q => q > 1 ? q - 1 : 1)}
-                            >
-                                <Ionicons name="remove" size={20} color={colors.dark} />
-                            </TouchableOpacity>
-                            <Text style={styles.qtyText}>{quantity}</Text>
-                            <TouchableOpacity 
-                                style={styles.qtyBtn} 
-                                onPress={() => {
-                                    if (productDetail && quantity < productDetail.quantity) {
-                                        setQuantity(q => q + 1);
-                                    }
-                                }}
-                            >
-                                <Ionicons name="add" size={20} color={colors.dark} />
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-
-                    {/* Nút Confirm */}
-                    <TouchableOpacity style={styles.confirmBtn} onPress={handleConfirmAction}>
-                        <Text style={styles.confirmBtnText}>
-                            {actionType === 'buy' ? "Buy Now" : "Add to Cart"}
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-            </TouchableWithoutFeedback>
-        </TouchableOpacity>
-      </Modal>
-
+        onClose={() => setModalVisible(false)}
+        product={productDetail}
+        quantity={quantity}
+        setQuantity={setQuantity}
+        onConfirm={handleConfirmAction}
+        actionType={actionType}
+        currentPrice={currentPrice}
+        image={productImages[0]}
+      />
     </View>
   );
 };
