@@ -19,6 +19,7 @@ import * as actionCreaters from "../../states/actionCreaters/actionCreaters";
 
 const CartScreen = ({ navigation }) => {
   const cartproduct = useSelector((state) => state.product);
+  
   const [totalPrice, setTotalPrice] = useState(0);
   const [refresh, setRefresh] = useState(false);
   const [checkedItems, setCheckedItems] = useState({});
@@ -27,20 +28,17 @@ const CartScreen = ({ navigation }) => {
   const { removeCartItem, increaseCartItemQuantity, decreaseCartItemQuantity } =
     bindActionCreators(actionCreaters, dispatch);
 
-  //method to remove the item from (cart) redux
   const deleteItem = (id) => {
     removeCartItem(id);
   };
 
-  //method to increase the quantity of the item in(cart) redux
-  const increaseQuantity = (id, quantity, avaiableQuantity) => {
-    if (avaiableQuantity > quantity) {
+  const increaseQuantity = (id, quantity, availableQuantity) => {
+    if (availableQuantity > quantity) {
       increaseCartItemQuantity({ id: id, type: "increase" });
       setRefresh(!refresh);
     }
   };
 
-  //method to decrease the quantity of the item in(cart) redux
   const decreaseQuantity = (id, quantity) => {
     if (quantity > 1) {
       decreaseCartItemQuantity({ id: id, type: "decrease" });
@@ -50,7 +48,6 @@ const CartScreen = ({ navigation }) => {
     }
   };
 
-  //method to toggle checkbox
   const toggleCheckItem = (id) => {
     setCheckedItems(prev => ({
       ...prev,
@@ -58,19 +55,21 @@ const CartScreen = ({ navigation }) => {
     }));
   };
 
-  //calcute and the set the total price for only checked items
+  // Tính tổng tiền cho các sản phẩm được chọn
   useEffect(() => {
-    setTotalPrice(
-      cartproduct.reduce((accumulator, object) => {
-        if (checkedItems[object._id]) {
-          return accumulator + object.price * object.quantity;
-        }
-        return accumulator;
-      }, 0)
-    );
+    const total = cartproduct.reduce((accumulator, object) => {
+      if (checkedItems[object._id]) {
+        // Sử dụng giá thực tế (price) đã được tính toán trong Reducer
+        // Nếu không có price thì fallback về oldPrice
+        const unitPrice = object.price || object.oldPrice || 0;
+        return accumulator + unitPrice * object.quantity;
+      }
+      return accumulator;
+    }, 0);
+    
+    setTotalPrice(total);
   }, [cartproduct, refresh, checkedItems]);
 
-  //count checked items
   const checkedCount = Object.values(checkedItems).filter(Boolean).length;
 
   return (
@@ -102,10 +101,6 @@ const CartScreen = ({ navigation }) => {
       </View>
       {cartproduct.length === 0 ? (
         <View style={styles.cartProductListContiainerEmpty}>
-          {/* <Image
-            source={CartEmpty}
-            style={{ height: 400, resizeMode: "contain" }}
-          /> */}
           <Text style={styles.secondaryTextSmItalic}>"Cart is empty"</Text>
         </View>
       ) : (
@@ -114,9 +109,13 @@ const CartScreen = ({ navigation }) => {
             <CartProductList
               key={index}
               index={index}
-              image={item.imageUrl?.[0] || ''}
+              image={item.imageUrl?.[0] || ''} // Đã fix lấy ảnh đầu tiên
               title={item.title}
-              price={item.price}
+              
+              // TRUYỀN CẢ 2 LOẠI GIÁ
+              price={item.oldPrice * (1-item.saleRate)} // Giá thực tế (đã giảm)
+              oldPrice={item.oldPrice} // Giá gốc (để gạch ngang nếu cần)
+              
               quantity={item.quantity}
               isChecked={checkedItems[item._id] || false}
               onToggleCheck={() => toggleCheckItem(item._id)}
@@ -124,7 +123,7 @@ const CartScreen = ({ navigation }) => {
                 increaseQuantity(
                   item._id,
                   item.quantity,
-                  item.avaiableQuantity
+                  item.availableQuantity // Sửa lỗi chính tả available -> avaiableQuantity (theo Reducer)
                 );
               }}
               onPressDecrement={() => {
@@ -149,7 +148,8 @@ const CartScreen = ({ navigation }) => {
           </View>
           <View>
             <Text style={styles.cartBottomPrimaryText}>Total ({checkedCount} items)</Text>
-            <Text style={styles.cartBottomSecondaryText}>{totalPrice}$</Text>
+            {/* Format giá tiền */}
+            <Text style={styles.cartBottomSecondaryText}>{totalPrice.toFixed(2)}$</Text>
           </View>
         </View>
         <View style={styles.cartBottomRightContainer}>
@@ -157,9 +157,10 @@ const CartScreen = ({ navigation }) => {
             <CustomButton
               text={"Checkout"}
               onPress={() => {
-                // Filter only checked items for checkout
+                // Lọc ra các sản phẩm được chọn
                 const selectedItems = cartproduct.filter(item => checkedItems[item._id]);
-                navigation.navigate("checkout", { selectedItems });
+                // Truyền sang CheckoutScreen thông qua params 'items'
+                navigation.navigate("checkout", { items: selectedItems }); 
               }}
             />
           ) : (
@@ -178,6 +179,7 @@ const CartScreen = ({ navigation }) => {
 export default CartScreen;
 
 const styles = StyleSheet.create({
+  // ... (Styles giữ nguyên như cũ)
   container: {
     width: "100%",
     flexDirecion: "row",

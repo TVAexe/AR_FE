@@ -6,6 +6,7 @@ import { colors } from "../../constants";
 const ProductCard = ({
   name,
   price,
+  oldPrice, // 1. Nhận thêm prop giá cũ
   image,
   quantity,
   onPress,
@@ -26,7 +27,16 @@ const ProductCard = ({
             0,
             10
           )}`}</Text>
-          <Text style={styles.primaryTextSm}>{price}$</Text>
+          
+          {/* 2. Sửa phần hiển thị giá */}
+          <View style={styles.priceContainer}>
+            {/* Chỉ hiện giá cũ nếu nó lớn hơn giá hiện tại */}
+            <Text style={styles.primaryTextSm}>{price}$</Text>
+            {oldPrice > price && (
+              <Text style={styles.oldPriceText}>{oldPrice}$</Text>
+            )}
+          </View>
+
         </View>
         <View>
           {quantity > 0 ? (
@@ -96,13 +106,25 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: colors.primary,
   },
+  // 3. Thêm Style cho giá cũ và container giá
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginTop: 2,
+  },
+  oldPriceText: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: colors.muted,
+    textDecorationLine: 'line-through', // Gạch ngang chữ
+    marginLeft: 5, // Khoảng cách với giá mới
+  },
   iconContainer: {
     backgroundColor: colors.primary,
     width: 30,
     height: 30,
     borderRadius: 5,
     display: "flex",
-
     justifyContent: "center",
     alignItems: "center",
   },
@@ -112,7 +134,6 @@ const styles = StyleSheet.create({
     height: 30,
     borderRadius: 5,
     display: "flex",
-
     justifyContent: "center",
     alignItems: "center",
   },

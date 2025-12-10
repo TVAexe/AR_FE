@@ -94,3 +94,37 @@ export const cancelOrder = async (orderId: number) => {
 
   return response.data;
 };
+
+// ... Các import và interface giữ nguyên như file của bạn ...
+
+// Thêm Interface cho Request tạo đơn hàng (nếu dùng TypeScript)
+export interface OrderItemRequest {
+    productId: number;
+    quantity: number;
+}
+
+export interface CreateOrderRequest {
+    shippingAddress: string;
+    items: OrderItemRequest[];
+}
+
+// ... getOrders và cancelOrder giữ nguyên ...
+
+// --- HÀM MỚI: CREATE ORDER ---
+export const createOrder = async (orderData: CreateOrderRequest) => {
+    const token = await getToken();
+
+    if (!token) {
+        throw new Error("User not logged in");
+    }
+
+    // Sử dụng axios.post thay vì fetch
+    // Đường dẫn giả định là /api/v1/orders/create dựa trên các API khác
+    const response = await axios.post("/api/v1/orders/create", orderData, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    return response.data;
+};

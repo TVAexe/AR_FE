@@ -52,7 +52,16 @@ const HomeScreen = ({ navigation, route }) => {
   };
 
   const handleAddToCart = (product) => {
-    addCartItem(product);
+    // Chuẩn hóa dữ liệu trước khi gửi vào Redux
+    const itemToAdd = {
+      ...product,
+      // Khi thêm nhanh từ Home, mặc định số lượng mua là 1
+      quantity: 1, 
+      // Map số lượng tồn kho từ API (product.quantity) sang biến countInStock để Redux hiểu
+      countInStock: product.quantity 
+    };
+    console.log("Adding to cart:", itemToAdd);
+    addCartItem(itemToAdd);
   };
 
   const fetchProduct = async () => {
@@ -156,7 +165,8 @@ const HomeScreen = ({ navigation, route }) => {
                 cardSize="large"
                 name={product.name || ''}
                 image={product.imageUrl?.[0] || ''}
-                price={product.oldPrice || 0}
+                price={product.oldPrice * (1-product.saleRate) || 0}
+                oldPrice={product.oldPrice || 0}
                 quantity={product.quantity || 0}
                 onPress={() => handleProductPress(product)}
                 onPressSecondary={() => handleAddToCart(product)}

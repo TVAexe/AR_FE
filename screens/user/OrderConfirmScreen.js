@@ -1,35 +1,65 @@
-import * as SecureStore from "expo-secure-store";
+import { StyleSheet, Text, View, StatusBar, Image } from "react-native";
 import React, { useEffect, useState } from "react";
-import { Image, StatusBar, StyleSheet, Text, View } from "react-native";
-import SuccessImage from "../../assets/image/success.png";
 import CustomButton from "../../components/CustomButton";
 import { colors } from "../../constants";
+import SuccessImage from "../../assets/image/success.png"; 
+import * as SecureStore from "expo-secure-store";
 
 const OrderConfirmScreen = ({ navigation }) => {
-  const [user, setUser] = useState({});
+  const [user, setUser] = useState(null);
 
-  //method to get authUser from async storage
-  const getUserData = async () => {
-    const value = await SecureStore.getItemAsync("authUser");
-    setUser(JSON.parse(value));
-  };
-
-  //fetch user data on initial render
+  // Lấy thông tin User để truyền lại cho màn hình Home
   useEffect(() => {
-    getUserData();
+    const getUser = async () => {
+      try {
+        const value = await SecureStore.getItemAsync("authUser");
+        if (value) {
+          setUser(JSON.parse(value));
+        }
+      } catch (error) {
+        console.log("Error getting user:", error);
+      }
+    };
+    getUser();
   }, []);
+
+  const handleBackToHome = () => {
+    // Nếu không tìm thấy user trong storage -> Về login
+    if (!user) {
+        navigation.replace("login");
+        return;
+    }
+
+    // Reset Stack và quay về Tab Home
+    navigation.reset({
+      index: 0,
+      routes: [
+        {
+          name: "tab", 
+          params: {
+            screen: "home", 
+            params: { user: user }, // Truyền user vào params của Home
+          },
+        },
+      ],
+    });
+  };
 
   return (
     <View style={styles.container}>
-      <StatusBar></StatusBar>
-      <View style={styles.imageConatiner}>
-        <Image source={SuccessImage} style={styles.Image} />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.light} />
+      
+      <View style={styles.imageContainer}>
+        <Image source={SuccessImage} style={styles.image} />
       </View>
-      <Text style={styles.secondaryText}>Order has be confirmed</Text>
-      <View>
+      
+      <Text style={styles.successText}>Order Confirmed!</Text>
+      <Text style={styles.subText}>Thank you for your purchase.</Text>
+      
+      <View style={styles.buttonContainer}>
         <CustomButton
           text={"Back to Home"}
-          onPress={() => navigation.replace("tab", { user: user })}
+          onPress={handleBackToHome}
         />
       </View>
     </View>
@@ -40,23 +70,36 @@ export default OrderConfirmScreen;
 
 const styles = StyleSheet.create({
   container: {
-    width: "100%",
-    flexDirecion: "row",
+    flex: 1,
     backgroundColor: colors.light,
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingBottom: 40,
-    flex: 1,
+    justifyContent: "center",
+    padding: 20,
   },
-  imageConatiner: {
-    width: "100%",
+  imageContainer: {
+    marginBottom: 20,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  Image: {
-    width: 400,
+  image: {
+    width: 300,
     height: 300,
+    resizeMode: "contain",
   },
-  secondaryText: {
-    fontSize: 20,
+  successText: {
+    fontSize: 28,
     fontWeight: "bold",
+    color: colors.primary,
+    marginBottom: 10,
+  },
+  subText: {
+    fontSize: 16,
+    color: colors.muted,
+    marginBottom: 40,
+    textAlign: "center",
+  },
+  buttonContainer: {
+    width: "100%",
+    paddingHorizontal: 10,
   },
 });
