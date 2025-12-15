@@ -2,13 +2,12 @@
 import axios, { AxiosInstance } from 'axios';
 
 
-const BASE_URL = "http://192.168.31.176:8080";
-const TIMEOUT = 10000;
+const BASE_URL = "https://arbe-production.up.railway.app";
+const TIMEOUT = 50000;
 const COMMON_HEADERS = {
  'Content-Type': 'application/json',
  Accept: 'application/json',
 };
-
 
 export enum AxiosErrorCode {
   TooManyRequests = 429,

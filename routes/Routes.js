@@ -23,45 +23,44 @@ import MyOrderDetailScreen from "../screens/user/MyOrderDetailScreen";
 import MyOrderScreen from "../screens/user/MyOrderScreen";
 import OrderConfirmScreen from "../screens/user/OrderConfirmScreen";
 import ProductDetailScreen from "../screens/user/ProductDetailScreen";
+import ARScreen from "../screens/user/ARScreen";
 import Tabs from "./tabs/Tabs";
 
 const Stack = createNativeStackNavigator();
 
 const Routes = () => {
   return (
-      <Stack.Navigator
-        initialRouteName="splash"
-        screenOptions={{ headerShown: false }}
-      >
-        <Stack.Screen name="splash" component={Splash} />
-        <Stack.Screen name="login" component={LoginScreen} />
-        <Stack.Screen name="signup" component={SignupScreen} />
-        <Stack.Screen name="forgetpassword" component={ForgetPasswordScreen} />
-        <Stack.Screen name="updatepassword" component={UpdatePasswordScreen} />
-        <Stack.Screen name="myaccount" component={MyAccountScreen} />
-        <Stack.Screen name="mywishlist" component={MyWishlistScreen} />
-        <Stack.Screen name="dashboard" component={DashboardScreen} />
-        <Stack.Screen name="addproduct" component={AddProductScreen} />
-        <Stack.Screen name="viewproduct" component={ViewProductScreen} />
-        <Stack.Screen name="editproduct" component={EditProductScreen} />
-        <Stack.Screen name="tab" component={Tabs} />
-        <Stack.Screen name="cart" component={CartScreen} />
-        <Stack.Screen name="checkout" component={CheckoutScreen} />
-        <Stack.Screen name="orderconfirm" component={OrderConfirmScreen} />
-        <Stack.Screen name="productdetail" component={ProductDetailScreen} />
-        <Stack.Screen name="vieworder" component={ViewOrdersScreen} />
-        <Stack.Screen
-          name="vieworderdetails"
-          component={ViewOrderDetailScreen}
-        />
-        <Stack.Screen name="myorder" component={MyOrderScreen} />
-        <Stack.Screen name="myorderdetail" component={MyOrderDetailScreen} />
-        <Stack.Screen name="viewcategories" component={ViewCategoryScreen} />
-        <Stack.Screen name="addcategories" component={AddCategoryScreen} />
-        <Stack.Screen name="editcategories" component={EditCategoryScreen} />
-        <Stack.Screen name="viewusers" component={ViewUsersScreen} />
-        <Stack.Screen name="categories" component={CategoriesScreen} />
-      </Stack.Navigator>
+    <Stack.Navigator
+      initialRouteName="splash"
+      screenOptions={{ headerShown: false }}
+    >
+      <Stack.Screen name="splash" component={Splash} />
+      <Stack.Screen name="login" component={LoginScreen} />
+      <Stack.Screen name="signup" component={SignupScreen} />
+      <Stack.Screen name="forgetpassword" component={ForgetPasswordScreen} />
+      <Stack.Screen name="updatepassword" component={UpdatePasswordScreen} />
+      <Stack.Screen name="myaccount" component={MyAccountScreen} />
+      <Stack.Screen name="mywishlist" component={MyWishlistScreen} />
+      <Stack.Screen name="dashboard" component={DashboardScreen} />
+      <Stack.Screen name="addproduct" component={AddProductScreen} />
+      <Stack.Screen name="viewproduct" component={ViewProductScreen} />
+      <Stack.Screen name="editproduct" component={EditProductScreen} />
+      <Stack.Screen name="tab" component={Tabs} />
+      <Stack.Screen name="cart" component={CartScreen} />
+      <Stack.Screen name="checkout" component={CheckoutScreen} />
+      <Stack.Screen name="orderconfirm" component={OrderConfirmScreen} />
+      <Stack.Screen name="productdetail" component={ProductDetailScreen} />
+      <Stack.Screen name="ar" component={ARScreen} />
+      <Stack.Screen name="vieworder" component={ViewOrdersScreen} />
+      <Stack.Screen name="vieworderdetails" component={ViewOrderDetailScreen} />
+      <Stack.Screen name="myorder" component={MyOrderScreen} />
+      <Stack.Screen name="myorderdetail" component={MyOrderDetailScreen} />
+      <Stack.Screen name="viewcategories" component={ViewCategoryScreen} />
+      <Stack.Screen name="addcategories" component={AddCategoryScreen} />
+      <Stack.Screen name="editcategories" component={EditCategoryScreen} />
+      <Stack.Screen name="viewusers" component={ViewUsersScreen} />
+      <Stack.Screen name="categories" component={CategoriesScreen} />
+    </Stack.Navigator>
   );
 };
 
