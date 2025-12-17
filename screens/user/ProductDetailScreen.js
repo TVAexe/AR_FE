@@ -51,25 +51,49 @@ const ProductCarousel = ({ images, activeSlide, onScroll }) => (
       {images.map((_, index) => (
         <View
           key={index}
-          style={[styles.dot, index === activeSlide ? styles.activeDot : styles.inactiveDot]}
+          style={[
+            styles.dot,
+            index === activeSlide ? styles.activeDot : styles.inactiveDot,
+          ]}
         />
       ))}
     </View>
   </View>
 );
 
-const PurchaseModal = ({ visible, onClose, product, quantity, setQuantity, onConfirm, actionType, currentPrice, image }) => {
+const PurchaseModal = ({
+  visible,
+  onClose,
+  product,
+  quantity,
+  setQuantity,
+  onConfirm,
+  actionType,
+  currentPrice,
+  image,
+}) => {
   if (!visible || !product) return null;
 
   return (
-    <Modal animationType="slide" transparent={true} visible={visible} onRequestClose={onClose}>
-      <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={onClose}>
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      <TouchableOpacity
+        style={styles.modalOverlay}
+        activeOpacity={1}
+        onPress={onClose}
+      >
         <TouchableWithoutFeedback>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Image source={{ uri: image }} style={styles.modalThumb} />
               <View style={styles.modalInfo}>
-                <Text style={styles.modalPrice}>${currentPrice.toFixed(2)}</Text>
+                <Text style={styles.modalPrice}>
+                  ${currentPrice.toFixed(2)}
+                </Text>
                 <Text style={styles.modalStock}>Stock: {product.quantity}</Text>
               </View>
               <TouchableOpacity onPress={onClose}>
@@ -80,13 +104,18 @@ const PurchaseModal = ({ visible, onClose, product, quantity, setQuantity, onCon
             <View style={styles.quantitySection}>
               <Text style={styles.sectionTitle}>Quantity</Text>
               <View style={styles.quantityControl}>
-                <TouchableOpacity style={styles.qtyBtn} onPress={() => setQuantity(q => Math.max(1, q - 1))}>
+                <TouchableOpacity
+                  style={styles.qtyBtn}
+                  onPress={() => setQuantity((q) => Math.max(1, q - 1))}
+                >
                   <Ionicons name="remove" size={20} color={colors.dark} />
                 </TouchableOpacity>
                 <Text style={styles.qtyText}>{quantity}</Text>
-                <TouchableOpacity 
-                  style={styles.qtyBtn} 
-                  onPress={() => setQuantity(q => (q < product.quantity ? q + 1 : q))}
+                <TouchableOpacity
+                  style={styles.qtyBtn}
+                  onPress={() =>
+                    setQuantity((q) => (q < product.quantity ? q + 1 : q))
+                  }
                 >
                   <Ionicons name="add" size={20} color={colors.dark} />
                 </TouchableOpacity>
@@ -94,7 +123,7 @@ const PurchaseModal = ({ visible, onClose, product, quantity, setQuantity, onCon
             </View>
             <TouchableOpacity style={styles.confirmBtn} onPress={onConfirm}>
               <Text style={styles.confirmBtnText}>
-                {actionType === 'buy' ? "Buy Now" : "Add to Cart"}
+                {actionType === "buy" ? "Buy Now" : "Add to Cart"}
               </Text>
             </TouchableOpacity>
           </View>
@@ -158,12 +187,16 @@ const ProductDetailScreen = ({ navigation, route }) => {
   }, [productDetail]);
   // ====================
 
-  const handleScroll = useCallback((event) => {
-    const slide = Math.ceil(
-      event.nativeEvent.contentOffset.x / event.nativeEvent.layoutMeasurement.width
-    );
-    if (slide !== activeSlide) setActiveSlide(slide);
-  }, [activeSlide]);
+  const handleScroll = useCallback(
+    (event) => {
+      const slide = Math.ceil(
+        event.nativeEvent.contentOffset.x /
+          event.nativeEvent.layoutMeasurement.width
+      );
+      if (slide !== activeSlide) setActiveSlide(slide);
+    },
+    [activeSlide]
+  );
 
   const openOptionModal = (type) => {
     if (!productDetail || productDetail.quantity <= 0) return;
@@ -181,11 +214,11 @@ const ProductDetailScreen = ({ navigation, route }) => {
       image: productDetail.imageUrl?.[0] || "",
       quantity: quantity,
       countInStock: productDetail.quantity,
-      maxQuantity: productDetail.quantity 
+      maxQuantity: productDetail.quantity,
     };
     addCartItem(itemToAdd);
     setModalVisible(false);
-    if (actionType === 'buy') {
+    if (actionType === "buy") {
       navigation.navigate("checkout", { items: [itemToAdd] });
     }
   };
@@ -202,11 +235,17 @@ const ProductDetailScreen = ({ navigation, route }) => {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
       <View style={styles.header}>
-        <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.goBack()}>
+        <TouchableOpacity
+          style={styles.headerBtn}
+          onPress={() => navigation.goBack()}
+        >
           <Ionicons name="chevron-back" size={28} color={colors.dark} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Detail</Text>
-        <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.navigate("cart")}>
+        <TouchableOpacity
+          style={styles.headerBtn}
+          onPress={() => navigation.navigate("cart")}
+        >
           {cartProduct.length > 0 && (
             <View style={styles.badgeContainer}>
               <Text style={styles.badgeText}>{cartProduct.length}</Text>
@@ -216,54 +255,101 @@ const ProductDetailScreen = ({ navigation, route }) => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-        <ProductCarousel images={productImages} activeSlide={activeSlide} onScroll={handleScroll} />
-        {error ? <View style={{padding: 20}}><CustomAlert message={error} type="error" /></View> : null}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
+        <ProductCarousel
+          images={productImages}
+          activeSlide={activeSlide}
+          onScroll={handleScroll}
+        />
+        {error ? (
+          <View style={{ padding: 20 }}>
+            <CustomAlert message={error} type="error" />
+          </View>
+        ) : null}
         <View style={styles.infoContainer}>
           <Text style={styles.productName}>{productDetail?.name}</Text>
           <View style={styles.priceRow}>
-            <View style={{flexDirection: 'row', alignItems: 'flex-end'}}>
-               <Text style={styles.currentPrice}>${currentPrice.toFixed(2)}</Text>
-               {productDetail?.saleRate > 0 && (
-                 <Text style={styles.oldPrice}>${productDetail?.oldPrice}</Text>
-               )}
+            <View style={{ flexDirection: "row", alignItems: "flex-end" }}>
+              <Text style={styles.currentPrice}>
+                ${currentPrice.toFixed(2)}
+              </Text>
+              {productDetail?.saleRate > 0 && (
+                <Text style={styles.oldPrice}>${productDetail?.oldPrice}</Text>
+              )}
             </View>
             {productDetail?.saleRate > 0 && (
               <View style={styles.saleBadge}>
-                <Text style={styles.saleText}>-{(productDetail.saleRate * 100).toFixed(0)}%</Text>
+                <Text style={styles.saleText}>
+                  -{(productDetail.saleRate * 100).toFixed(0)}%
+                </Text>
               </View>
             )}
           </View>
           <View style={styles.divider} />
           <Text style={styles.sectionTitle}>Description</Text>
-          <Text style={styles.descriptionText}>{productDetail?.description}</Text>
+          <Text style={styles.descriptionText}>
+            {productDetail?.description}
+          </Text>
         </View>
       </ScrollView>
 
       <View style={styles.bottomBar}>
         <View style={styles.bottomBarContent}>
-            <TouchableOpacity 
-                style={[styles.actionBtn, styles.cartActionBtn]}
-                onPress={() => openOptionModal('cart')}
-                disabled={productDetail?.quantity <= 0}
+          <TouchableOpacity
+            style={[styles.actionBtn, styles.cartActionBtn]}
+            onPress={() => openOptionModal("cart")}
+            disabled={productDetail?.quantity <= 0}
+          >
+            <Ionicons name="cart-outline" size={24} color={colors.primary} />
+            <Text style={[styles.actionBtnText, { color: colors.primary }]}>
+              Add to Cart
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.actionBtn, styles.arActionBtn]}
+            onPress={() =>
+              navigation.navigate("ar", {
+                product: productDetail,
+                glbUrl:
+                  productDetail?.arModel?.glbUrl ||
+                  "https://funiture-shop-storage.s3.ap-southeast-1.amazonaws.com/chair%20GLB.glb",
+              })
+            }
+            disabled={productDetail?.quantity <= 0}
+          >
+            <Ionicons name="scan-outline" size={24} color={colors.white} />
+            <Text
+              style={[
+                styles.actionBtnText,
+                { color: colors.white, marginLeft: 5 },
+              ]}
             >
-                <Ionicons name="cart-outline" size={24} color={colors.primary} />
-                <Text style={[styles.actionBtnText, {color: colors.primary}]}>Add to Cart</Text>
-            </TouchableOpacity>
-            <View style={{width: 15}} /> 
-            <TouchableOpacity 
-                style={[styles.actionBtn, styles.buyActionBtn, productDetail?.quantity <= 0 && styles.disabledBtn]}
-                onPress={() => openOptionModal('buy')}
-                disabled={productDetail?.quantity <= 0}
-            >
-                <Text style={[styles.actionBtnText, {color: colors.white}]}>
-                    {productDetail?.quantity > 0 ? "Buy Now" : "Out of Stock"}
-                </Text>
-            </TouchableOpacity>
+              Try AR
+            </Text>
+          </TouchableOpacity>
+
+          {/* <View style={{width: 15}} />  */}
+          <TouchableOpacity
+            style={[
+              styles.actionBtn,
+              styles.buyActionBtn,
+              productDetail?.quantity <= 0 && styles.disabledBtn,
+            ]}
+            onPress={() => openOptionModal("buy")}
+            disabled={productDetail?.quantity <= 0}
+          >
+            <Text style={[styles.actionBtnText, { color: colors.white }]}>
+              {productDetail?.quantity > 0 ? "Buy Now" : "Out of Stock"}
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
 
-      <PurchaseModal 
+      <PurchaseModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
         product={productDetail}
@@ -300,33 +386,89 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
   },
   headerBtn: {
-    width: 40, height: 40, backgroundColor: colors.light, borderRadius: 12, justifyContent: "center", alignItems: "center",
+    width: 40,
+    height: 40,
+    backgroundColor: colors.light,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
   },
   headerTitle: { fontSize: 18, fontWeight: "bold", color: colors.dark },
   badgeContainer: {
-    position: "absolute", top: -5, right: -5, backgroundColor: colors.danger, borderRadius: 10, width: 20, height: 20, justifyContent: "center", alignItems: "center", zIndex: 10,
+    position: "absolute",
+    top: -5,
+    right: -5,
+    backgroundColor: colors.danger,
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
   },
   badgeText: { color: "white", fontSize: 10, fontWeight: "bold" },
-  
+
   // Carousel
   carouselContainer: { marginBottom: 10 },
-  carouselImage: { width: windowWidth * 0.9, height: 350, resizeMode: "contain" },
+  carouselImage: {
+    width: windowWidth * 0.9,
+    height: 350,
+    resizeMode: "contain",
+  },
   pagination: { flexDirection: "row", justifyContent: "center", marginTop: 10 },
   dot: { height: 8, borderRadius: 4, marginHorizontal: 4 },
   activeDot: { width: 24, backgroundColor: colors.primary },
   inactiveDot: { width: 8, backgroundColor: colors.muted },
-  
+
   // Info
   infoContainer: { paddingHorizontal: 20, paddingTop: 10 },
-  productName: { fontSize: 26, fontWeight: "bold", color: colors.dark, marginBottom: 5 },
-  priceRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 },
+  productName: {
+    fontSize: 26,
+    fontWeight: "bold",
+    color: colors.dark,
+    marginBottom: 5,
+  },
+  priceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 20,
+  },
   currentPrice: { fontSize: 28, fontWeight: "bold", color: colors.primary },
-  oldPrice: { fontSize: 18, color: colors.muted, textDecorationLine: "line-through", marginLeft: 10, marginBottom: 5 },
-  saleBadge: { backgroundColor: "#FFEBEB", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: colors.danger },
+  oldPrice: {
+    fontSize: 18,
+    color: colors.muted,
+    textDecorationLine: "line-through",
+    marginLeft: 10,
+    marginBottom: 5,
+  },
+  saleBadge: {
+    backgroundColor: "#FFEBEB",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.danger,
+  },
   saleText: { color: colors.danger, fontWeight: "bold", fontSize: 14 },
-  divider: { height: 1, backgroundColor: "#F0F0F0", marginBottom: 20, marginTop: 10 },
-  sectionTitle: { fontSize: 18, fontWeight: "600", color: colors.dark, marginBottom: 10 },
-  descriptionText: { fontSize: 15, color: "#666", lineHeight: 24, textAlign: "justify" },
+  divider: {
+    height: 1,
+    backgroundColor: "#F0F0F0",
+    marginBottom: 20,
+    marginTop: 10,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: colors.dark,
+    marginBottom: 10,
+  },
+  descriptionText: {
+    fontSize: 15,
+    color: "#666",
+    lineHeight: 24,
+    textAlign: "justify",
+  },
 
   // Bottom Bar
   bottomBar: {
@@ -349,6 +491,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    gap: 10,
   },
   actionBtn: {
     flex: 1,
@@ -363,11 +506,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.primary,
   },
+  arActionBtn: {
+    backgroundColor: colors.secondary || "#8E44AD", // Màu tím cho AR
+    borderWidth: 1,
+    borderColor: colors.secondary || "#8E44AD",
+  },
   buyActionBtn: {
     backgroundColor: colors.primary,
   },
   actionBtnText: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: "bold",
     marginLeft: 5,
   },
@@ -390,25 +538,25 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 10,
   },
   modalThumb: {
     width: 80,
     height: 80,
     borderRadius: 8,
-    resizeMode: 'contain',
+    resizeMode: "contain",
     backgroundColor: colors.light,
     marginRight: 15,
   },
   modalInfo: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   modalPrice: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: colors.primary,
     marginBottom: 5,
   },
@@ -417,9 +565,9 @@ const styles = StyleSheet.create({
     color: colors.muted,
   },
   quantitySection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 30,
   },
   quantityControl: {
@@ -439,19 +587,19 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginHorizontal: 15,
     minWidth: 20,
-    textAlign: 'center',
+    textAlign: "center",
   },
   confirmBtn: {
-    width: '100%',
+    width: "100%",
     height: 50,
     backgroundColor: colors.primary,
     borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   confirmBtnText: {
     color: colors.white,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     fontSize: 18,
   },
 });
