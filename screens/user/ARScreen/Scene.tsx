@@ -1,127 +1,148 @@
 import {
-    Viro3DObject,
-    ViroAmbientLight,
-    ViroARPlaneSelector,
-    ViroARScene,
-    ViroDirectionalLight,
-    ViroNode,
+  Viro3DObject,
+  ViroAmbientLight,
+  ViroARScene,
+  ViroNode,
+  ViroTrackingStateConstants,
 } from '@reactvision/react-viro';
-import React, { useEffect, useRef, useState } from 'react';
+import React, {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
 
-interface SceneProps {
+interface Props {
   glbUrl: string;
-  onStateChange: (state: {
-    planeDetected: boolean;
-    placed: boolean;
-    showHint: boolean;
-  }) => void;
+  onARReady?: (ready: boolean) => void;
+  onStateChange?: (state: { hasPreview: boolean; placed: boolean }) => void;
+  onReady?: (controls: { place: () => void }) => void;
 }
 
-const ROTATION_SENSITIVITY = 1;
-const MIN_SCALE = 0.5;
-const MAX_SCALE = 3;
+const Scene = forwardRef<any, Props>((props, _ref) => {
+  /* ================= LOCK FLAGS ================= */
+  const placedRef = useRef(false);
 
-const Scene = ({ glbUrl, onStateChange }: SceneProps) => {
-  /** Lighting */
-  const [ambientIntensity, setAmbientIntensity] = useState(500);
-  const [ambientColor, setAmbientColor] = useState('#ffffff');
+  /* ================= TRANSFORMS ================= */
+  const positionRef = useRef<[number, number, number]>([0, 0, -1]);
+  const rotationRef = useRef<[number, number, number]>([0, 0, 0]);
+  const scaleRef = useRef<[number, number, number]>([0.2, 0.2, 0.2]);
 
-  /** Object transform */
-  const currentScale = useRef(1);
-  const currentRotationY = useRef(0);
+  const [position, setPosition] = useState(positionRef.current);
+  const [rotation, setRotation] = useState(rotationRef.current);
+  const [scale, setScale] = useState(scaleRef.current);
 
-  const [scale, setScale] = useState<[number, number, number]>([1, 1, 1]);
-  const [rotation, setRotation] = useState<[number, number, number]>([0, 0, 0]);
+  /* ================= HIT TEST (PREVIEW ONLY) ================= */
+  const hitTestInterval = useRef<any>(null);
 
-  /** AR state */
-  const [planeDetected, setPlaneDetected] = useState(false);
-  const [placed, setPlaced] = useState(false);
-  const [showHint, setShowHint] = useState(true);
+  const startHitTest = (scene: any) => {
+    stopHitTest();
 
-  /** Notify parent */
-  useEffect(() => {
-    onStateChange({ planeDetected, placed, showHint });
-  }, [planeDetected, placed, showHint]);
+    hitTestInterval.current = setInterval(async () => {
+      if (placedRef.current) return;
 
-  /** Auto hide hint */
-  useEffect(() => {
-    if (!placed) return;
-    const timer = setTimeout(() => setShowHint(false), 4000);
-    return () => clearTimeout(timer);
-  }, [placed]);
+      try {
+        const res = await scene.performARHitTestWithPoint(0.5, 0.5);
+        if (res?.length) {
+          const hit = res.find(
+            (r: any) => r.type === 'ExistingPlaneUsingExtent'
+          );
+          if (hit) {
+            positionRef.current = hit.transform.position;
+            setPosition([...positionRef.current]);
+            props.onStateChange?.({
+              hasPreview: true,
+              placed: false,
+            });
+          }
+        }
+      } catch {}
+    }, 120);
+  };
 
-  /** Gestures */
-  const onRotate = (state: number, factor: number) => {
-    if (state === 2) {
-      const newY = currentRotationY.current - factor * ROTATION_SENSITIVITY;
-      setRotation([0, newY, 0]);
-    }
-    if (state === 3) {
-      currentRotationY.current -= factor * ROTATION_SENSITIVITY;
-      setRotation([0, currentRotationY.current, 0]);
+  const stopHitTest = () => {
+    if (hitTestInterval.current) {
+      clearInterval(hitTestInterval.current);
+      hitTestInterval.current = null;
     }
   };
 
-  const onPinch = (state: number, factor: number) => {
-    if (state === 2) {
-      const newScale = Math.min(
-        Math.max(currentScale.current * factor, MIN_SCALE),
-        MAX_SCALE
-      );
-      setScale([newScale, newScale, newScale]);
-    }
-    if (state === 3) {
-      currentScale.current = scale[0];
-    }
+  /* ================= PLACE (LOCK HERE) ================= */
+  const place = () => {
+    if (placedRef.current) return;
+
+    placedRef.current = true;
+    stopHitTest();
+
+    setPosition([...positionRef.current]); // SNAPSHOT
+    props.onStateChange?.({
+      hasPreview: true,
+      placed: true,
+    });
   };
 
+  useImperativeHandle(props.onReady as any, () => ({
+    place,
+  }));
+
+  /* ================= CLEANUP ================= */
+  useEffect(() => {
+    return () => stopHitTest();
+  }, []);
+
+  /* ================= RENDER ================= */
   return (
     <ViroARScene
-      onAmbientLightUpdate={({ color, intensity }) => {
-        setAmbientColor(color);
-        setAmbientIntensity(Math.min(intensity, 1000));
+      onTrackingUpdated={(state) => {
+        if (
+          state === ViroTrackingStateConstants.TRACKING_NORMAL &&
+          !hitTestInterval.current
+        ) {
+          props.onARReady?.(true);
+        }
+      }}
+      onCameraARHitTest={(e) => {
+        // KHÔNG dùng continuous hit-test ở đây
+      }}
+      ref={(scene) => {
+        if (scene && !hitTestInterval.current) {
+          startHitTest(scene);
+        }
       }}
     >
-      <ViroAmbientLight
-        color={ambientColor}
-        intensity={ambientIntensity}
-      />
-      <ViroDirectionalLight
-        direction={[0, -1, -0.3]}
-        intensity={600}
-        castsShadow
-      />
+      <ViroAmbientLight color="#ffffff" intensity={800} />
 
-      <ViroARPlaneSelector
-        alignment="Horizontal"
-        minWidth={0.5}
-        minHeight={0.5}
-        onPlaneSelected={() => {
-          setPlaneDetected(true);
-          setPlaced(true);
+      {/* ===== MODEL NODE (DUY NHẤT) ===== */}
+      <ViroNode
+        position={position}
+        rotation={rotation}
+        scale={scale}
+        dragType="FixedToWorld"
+        onDrag={(dragPos) => {
+          if (!placedRef.current) return;
+          positionRef.current = dragPos;
+          setPosition([...dragPos]);
+        }}
+        onPinch={(state, factor) => {
+          if (!placedRef.current || state !== 2) return;
+          const s = scaleRef.current[0] * factor;
+          scaleRef.current = [s, s, s];
+          setScale([...scaleRef.current]);
+        }}
+        onRotate={(state, rot) => {
+          if (!placedRef.current || state !== 2) return;
+          rotationRef.current = [0, rotationRef.current[1] + rot, 0];
+          setRotation([...rotationRef.current]);
         }}
       >
-        {placed && (
-          <ViroNode
-            position={[0, 0, 0]}
-            dragType="FixedToWorld"
-          >
-            <Viro3DObject
-              source={{ uri: glbUrl }}
-              type="GLB"
-              position={[0, 0, 0]}
-              scale={scale}
-              rotation={rotation}
-              onRotate={onRotate}
-              onPinch={onPinch}
-              shadowCastingBitMask={1}
-              lightReceivingBitMask={1}
-            />
-          </ViroNode>
-        )}
-      </ViroARPlaneSelector>
+        <Viro3DObject
+          source={{ uri: props.glbUrl }}
+          type="GLB"
+        />
+      </ViroNode>
     </ViroARScene>
   );
-};
+});
 
 export default Scene;
