@@ -1,5 +1,5 @@
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Image,
   ScrollView,
@@ -113,7 +113,7 @@ const CartScreen = ({ navigation }) => {
               title={item.title}
               
               // TRUYỀN CẢ 2 LOẠI GIÁ
-              price={item.oldPrice * (1-item.saleRate)} // Giá thực tế (đã giảm)
+              price={item.oldPrice * (1-item.saleRate/100)} // Giá thực tế (đã giảm)
               oldPrice={item.oldPrice} // Giá gốc (để gạch ngang nếu cần)
               
               quantity={item.quantity}
@@ -147,7 +147,7 @@ const CartScreen = ({ navigation }) => {
             />
           </View>
           <View>
-            <Text style={styles.cartBottomPrimaryText}>Total ({checkedCount} items)</Text>
+            <Text style={styles.cartBottomPrimaryText}>Total price</Text>
             {/* Format giá tiền */}
             <Text style={styles.cartBottomSecondaryText}>{totalPrice.toFixed(2)}$</Text>
           </View>

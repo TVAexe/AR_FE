@@ -1,18 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as SecureStore from "expo-secure-store";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
-  View,
-  KeyboardAvoidingView,
-  Platform,
-  TextInput
+  View
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { bindActionCreators } from "redux";
@@ -80,7 +80,7 @@ const CheckoutScreen = ({ navigation, route }) => {
     const total = checkoutItems.reduce((acc, item) => {
       const saleRate = item.saleRate || 0;
       const oldPrice = Number(item.oldPrice) || 0;
-      let finalPrice = oldPrice * (1 - saleRate);
+      let finalPrice = oldPrice * (1 - saleRate/100);
       if (finalPrice === 0) finalPrice = Number(item.price) || 0;
 
       return acc + finalPrice * Number(item.quantity);
@@ -228,7 +228,7 @@ const CheckoutScreen = ({ navigation, route }) => {
               <BasicProductList
                 key={index}
                 title={product.name || product.title}
-                price={product.oldPrice * (1 - (product.saleRate || 0))} 
+                price={product.oldPrice * (1 - (product.saleRate / 100 || 0))} 
                 oldPrice={product.oldPrice}
                 quantity={product.quantity}
                 image={product.imageUrl[0] || "https://via.placeholder.com/100"}

@@ -4,6 +4,9 @@ import * as MediaLibrary from 'expo-media-library';
 import React, { useRef, useState } from 'react';
 import { Alert, Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; // Dùng thư viện mới
+import { useDispatch, useSelector } from "react-redux";
+import { bindActionCreators } from "redux";
+import * as actionCreators from "../../../states/actionCreaters/actionCreaters";
 import ProductInfoOverlay from './ProductInfoOverlay';
 import Scene from './Scene';
 
@@ -32,6 +35,11 @@ export default function ARScreen({ route }: ARScreenProps) {
   const [rotateSignal, setRotateSignal] = useState(0);
   const [resetSignal, setResetSignal] = useState(0);
 
+  const dispatch = useDispatch();
+  const { addCartItem } = bindActionCreators(actionCreators, dispatch);
+  const cartProduct = useSelector((state: any) => state.product);
+
+
   const triggerFlash = () => {
     flashAnim.setValue(1);
     Animated.timing(flashAnim, {
@@ -59,6 +67,28 @@ export default function ARScreen({ route }: ARScreenProps) {
       Alert.alert("Lỗi", "Không thể chụp ảnh.");
     }
   };
+
+  const handleAddToCart = () => {
+    if (!route?.params?.product) return;
+
+    const product = route.params.product;
+
+    const currentPrice = product.oldPrice *  (1 - product.saleRate / 100) || 0; 
+    const itemToAdd = {
+      ...product,
+      id: product.id || product._id,
+      price: currentPrice,
+      image: product.imageUrl?.[0] || "",
+      quantity: 1,
+      countInStock: product.quantity,
+      maxQuantity: product.quantity,
+    };
+
+    addCartItem(itemToAdd);
+
+    Alert.alert("Thành công", "Sản phẩm đã được thêm vào giỏ hàng");
+  };
+
   
   return (
     <View style={styles.container}>
@@ -155,6 +185,13 @@ export default function ARScreen({ route }: ARScreenProps) {
               <Text style={styles.controlText}>Reset</Text>
             </TouchableOpacity>
           </View>
+          
+          <TouchableOpacity
+            style={styles.addToCartButton}
+            onPress={handleAddToCart}
+          >
+            <Text style={styles.addToCartText}>🛒</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -289,6 +326,28 @@ const styles = StyleSheet.create({
     bottom: 24,
     width: '100%',
     alignItems: 'center',
+  },
+  addToCartButton: {
+    position: 'absolute',
+    right: 20,
+    bottom: 60,
+    width: 70,
+    height: 70,
+    borderRadius: 40,
+    backgroundColor: '#e35b2dff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+
+  addToCartText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 32,
   },
 
 });

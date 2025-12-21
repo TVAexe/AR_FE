@@ -82,11 +82,9 @@ const Scene = (props: SceneProps) => {
   // ===== PINCH: scale có giới hạn =====
   const onPinch = useCallback(
     (pinchState: number, scaleFactor: number) => {
-      if (pinchState === 3) {
-        const nextScale = scale[0] * scaleFactor;
-        const clamped = Math.min(MAX_SCALE, Math.max(MIN_SCALE, nextScale));
-        setScale([clamped, clamped, clamped]);
-      }
+      const nextScale = scale[0] * scaleFactor;
+      const clamped = Math.min(MAX_SCALE, Math.max(MIN_SCALE, nextScale));
+      setScale([clamped, clamped, clamped]);
     },
     [scale]
   );
@@ -98,17 +96,15 @@ const Scene = (props: SceneProps) => {
 
   return (
     <ViroARScene>
-      {/* Ánh sáng môi trường */}
+      
       <ViroAmbientLight color="#ffffff" intensity={500} />
 
-      {/* Ánh sáng chính + bóng đổ */}
       <ViroDirectionalLight
         direction={[0, -1, -0.3]}
         intensity={800}
         castsShadow
       />
 
-      {/* Chọn mặt phẳng ngang để đặt vật */}
       <ViroARPlaneSelector
         alignment="Horizontal"
         minHeight={0.2}
@@ -117,7 +113,7 @@ const Scene = (props: SceneProps) => {
       >
         <ViroNode
           position={position}
-          dragType="FixedDistance"
+          dragType="FixedToWorld"
           onDrag={onDrag}
         >
           {/* Spinner khi đang load model */}
