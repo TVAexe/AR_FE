@@ -1,6 +1,6 @@
 import { getCategories } from "@/api/categoriesAPI";
 import { getProducts } from "@/api/productsAPI";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dimensions,
   FlatList,
@@ -165,7 +165,7 @@ const HomeScreen = ({ navigation, route }) => {
                 cardSize="large"
                 name={product.name || ''}
                 image={product.imageUrl?.[0] || ''}
-                price={product.oldPrice * (1-product.saleRate) || 0}
+                price={product.oldPrice * (1-product.saleRate / 100) || 0}
                 oldPrice={product.oldPrice || 0}
                 quantity={product.quantity || 0}
                 onPress={() => handleProductPress(product)}

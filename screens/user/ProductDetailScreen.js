@@ -1,26 +1,26 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
-import {
-  StyleSheet,
-  Image,
-  TouchableOpacity,
-  View,
-  StatusBar,
-  Text,
-  ActivityIndicator,
-  ScrollView,
-  FlatList,
-  Dimensions,
-  Modal,
-  TouchableWithoutFeedback,
-} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useSelector, useDispatch } from "react-redux";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  Dimensions,
+  FlatList,
+  Image,
+  Modal,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
+} from "react-native";
+import { useDispatch, useSelector } from "react-redux";
 import { bindActionCreators } from "redux";
 
+import { getProductById } from "../../api/productsAPI";
+import CustomAlert from "../../components/CustomAlert/CustomAlert";
 import { colors } from "../../constants"; // Bỏ import network vì không dùng nữa
 import * as actionCreaters from "../../states/actionCreaters/actionCreaters";
-import CustomAlert from "../../components/CustomAlert/CustomAlert";
-import { getProductById } from "../../api/productsAPI";
 
 const { width: windowWidth } = Dimensions.get("window");
 
@@ -171,7 +171,7 @@ const ProductDetailScreen = ({ navigation, route }) => {
   const currentPrice = useMemo(() => {
     if (!productDetail) return 0;
     if (productDetail.oldPrice && productDetail.saleRate) {
-      return productDetail.oldPrice * (1 - productDetail.saleRate);
+      return productDetail.oldPrice * (1 - productDetail.saleRate / 100);
     }
     return productDetail.oldPrice || 0;
   }, [productDetail]);
@@ -283,7 +283,7 @@ const ProductDetailScreen = ({ navigation, route }) => {
             {productDetail?.saleRate > 0 && (
               <View style={styles.saleBadge}>
                 <Text style={styles.saleText}>
-                  -{(productDetail.saleRate * 100).toFixed(0)}%
+                  -{(productDetail.saleRate).toFixed(0)}%
                 </Text>
               </View>
             )}

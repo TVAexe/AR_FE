@@ -17,7 +17,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.anonymous.AR-FE",
       "infoPlist": {
-        "NSCameraUsageDescription": "This app needs camera access for AR features"
+        "NSCameraUsageDescription": "This app needs camera access for AR features",
+        "NSPhotoLibraryUsageDescription": "Ứng dụng cần truy cập ảnh để bạn có thể xem lại ảnh chụp AR.",
+        "NSPhotoLibraryAddUsageDescription": "Ứng dụng cần quyền ghi để lưu ảnh chụp màn hình AR vào điện thoại của bạn."
       }
     },
     "android": {
@@ -28,6 +30,8 @@
       "package": "com.anonymous.AR_FE",
       "permissions": [
         "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
         "android.permission.CAMERA"
       ]
     },
@@ -48,6 +52,13 @@
       ],
       "expo-web-browser",
       "expo-secure-store",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Cho phép ứng dụng lưu ảnh AR vào thư viện.",
+          "savePhotosPermission": "Cho phép ứng dụng lưu ảnh AR vào thư viện."
+        }
+      ],
       [
         "expo-camera",
         {

@@ -16,6 +16,7 @@ import Splash from "../screens/auth/Splash";
 import MyAccountScreen from "../screens/profile/MyAccountScreen";
 import MyWishlistScreen from "../screens/profile/MyWishlistScreen";
 import UpdatePasswordScreen from "../screens/profile/UpdatePasswordScreen";
+import ARScreen from "../screens/user/AR/ARScreen";
 import CartScreen from "../screens/user/CartScreen";
 import CategoriesScreen from "../screens/user/CategoriesScreen";
 import CheckoutScreen from "../screens/user/CheckoutScreen.js";
@@ -23,7 +24,6 @@ import MyOrderDetailScreen from "../screens/user/MyOrderDetailScreen";
 import MyOrderScreen from "../screens/user/MyOrderScreen";
 import OrderConfirmScreen from "../screens/user/OrderConfirmScreen";
 import ProductDetailScreen from "../screens/user/ProductDetailScreen";
-import ARScreen from "../screens/user/ARScreen";
 import Tabs from "./tabs/Tabs";
 
 const Stack = createNativeStackNavigator();
