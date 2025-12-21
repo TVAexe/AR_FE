@@ -1,7 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import { ViroARSceneNavigator } from '@reactvision/react-viro';
 import * as MediaLibrary from 'expo-media-library';
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Alert, Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; // Dùng thư viện mới
 import ProductInfoOverlay from './ProductInfoOverlay';
@@ -27,6 +27,10 @@ export default function ARScreen({ route }: ARScreenProps) {
     'https://funiture-shop-storage.s3.ap-southeast-1.amazonaws.com/chair%20GLB.glb';
 
   const [permissionResponse, requestPermission] = MediaLibrary.usePermissions();
+
+  const [scaleSignal, setScaleSignal] = useState(0);
+  const [rotateSignal, setRotateSignal] = useState(0);
+  const [resetSignal, setResetSignal] = useState(0);
 
   const triggerFlash = () => {
     flashAnim.setValue(1);
@@ -62,7 +66,12 @@ export default function ARScreen({ route }: ARScreenProps) {
         ref={navigatorRef}
         autofocus
         initialScene={{ scene: Scene as any }}
-        viroAppProps={{ glbUrl: modelUrl }}
+        viroAppProps={{ 
+          glbUrl: modelUrl,
+          scaleSignal,
+          rotateSignal,
+          resetSignal,
+         }}
         style={{ flex: 1 }}
       />
 
@@ -71,97 +80,215 @@ export default function ARScreen({ route }: ARScreenProps) {
         style={[styles.flashOverlay, { opacity: flashAnim }]} 
       />
 
-      {/* --- UI OVERLAY --- */}
-      <View style={[styles.overlay, { paddingTop: insets.top + 10, paddingBottom: insets.bottom + 20 }]}>
-        
-        {/* Header: Nút back và Thông tin sản phẩm */}
+      {/* ================= UI OVERLAY ================= */}
+      <View
+        style={[
+          styles.overlay,
+          { paddingTop: insets.top + 10, paddingBottom: insets.bottom + 16 },
+        ]}
+      >
+        {/* ===== HEADER (TOP) ===== */}
         <View style={styles.header}>
           <ProductInfoOverlay
-              name={route?.params?.product?.name || 'Product'}
-              price={route?.params?.product?.oldPrice || 0}
-              saleRate={route?.params?.product?.saleRate || 0}
+            name={route?.params?.product?.name || 'Product'}
+            price={route?.params?.product?.oldPrice || 0}
+            saleRate={route?.params?.product?.saleRate || 0}
           />
 
-          <TouchableOpacity 
-            style={styles.backButton} 
+          <TouchableOpacity
+            style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
             <Text style={styles.backText}>✕</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Hướng dẫn & Nút chụp */}
-        <View style={styles.footer}>
-          <View style={styles.instructionContainer}>
-            <Text style={styles.instructionText}>Tìm mặt phẳng và đặt vật thể</Text>
-            <Text style={styles.instructionText}>Dùng 2 ngón tay xoay/phóng</Text>
-          </View>
-
-          <TouchableOpacity style={styles.captureButton} onPress={takeScreenshot}>
+        {/* ===== CAPTURE BUTTON (RIGHT - CENTER) ===== */}
+        <View style={styles.captureWrapper}>
+          <TouchableOpacity
+            style={styles.captureButton}
+            onPress={takeScreenshot}
+          >
             <View style={styles.captureButtonInner} />
           </TouchableOpacity>
         </View>
 
+        {/* ===== BOTTOM PANEL ===== */}
+        <View style={[styles.bottomPanel, { bottom: insets.bottom + 24 }]}>
+          {/* Instruction */}
+          <View style={styles.instructionContainer}>
+            <Text style={styles.instructionText}>
+              Tìm mặt phẳng và đặt vật thể
+            </Text>
+            <Text style={styles.instructionText}>
+              Dùng 2 ngón tay để xoay / phóng to
+            </Text>
+          </View>
+
+          {/* Control Panel */}
+          <View style={styles.controlPanelInline}>
+            <TouchableOpacity
+              style={styles.controlBtn}
+              onPress={() => setScaleSignal((v) => v + 1)}
+            >
+              <Text style={styles.controlText}>＋</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.controlBtn}
+              onPress={() => setScaleSignal((v) => v - 1)}
+            >
+              <Text style={styles.controlText}>－</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.controlBtn}
+              onPress={() => setRotateSignal((v) => v + 1)}
+            >
+              <Text style={styles.controlText}>⟳ 45°</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.controlBtn}
+              onPress={() => setResetSignal((v) => v + 1)}
+            >
+              <Text style={styles.controlText}>Reset</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
+
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  /* ===== ROOT ===== */
+  container: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+
+  /* ===== FLASH EFFECT ===== */
   flashOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'white',
     zIndex: 999,
   },
+
+  /* ===== OVERLAY WRAPPER ===== */
   overlay: {
     position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    justifyContent: 'space-between',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     paddingHorizontal: 20,
   },
-  header: { 
+
+  /* ===== HEADER ===== */
+  header: {
     position: 'absolute',
     top: 40,
     left: 16,
     right: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
+
   backButton: {
-    width: 44, height: 44, borderRadius: 22,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center', alignItems: 'center',
-    marginRight: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  backText: { color: 'white', fontSize: 18 },
-  productBadge: {
-    flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.85)',
-    padding: 10, borderRadius: 12,
+
+  backText: {
+    color: 'white',
+    fontSize: 18,
   },
-  productName: { fontSize: 15, fontWeight: 'bold' },
-  priceRow: { flexDirection: 'row', alignItems: 'center' },
-  priceText: { color: '#E44D26', fontWeight: 'bold' },
-  saleBadge: { backgroundColor: '#E44D26', paddingHorizontal: 4, borderRadius: 4, marginLeft: 5 },
-  saleText: { color: 'white', fontSize: 10, fontWeight: 'bold' },
-  footer: { 
+
+  /* ===== RIGHT STACK (CAPTURE + INSTRUCTION + CONTROLS) ===== */
+  rightStack: {
     position: 'absolute',
-    bottom: 30,           
-    right: 0,
-    left: 0,
-    alignItems: 'center', 
+    right: 16,
+    top: '35%',              // giữa màn hình
+    alignItems: 'center',
   },
-  instructionContainer: {
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    padding: 10, borderRadius: 20,
-    marginBottom: 20,
-  },
-  instructionText: { color: 'white', fontSize: 24 },
+
+  /* ===== CAPTURE BUTTON ===== */
   captureButton: {
-    width: 70, height: 70, borderRadius: 35,
-    borderWidth: 4, borderColor: 'white',
-    justifyContent: 'center', alignItems: 'center',
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    borderWidth: 4,
+    borderColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.2)',
   },
-  captureButtonInner: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'white' },
+
+  captureButtonInner: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'white',
+  },
+
+  /* ===== INSTRUCTION ===== */
+  instructionContainer: {
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 18,
+    marginBottom: 14,
+  },
+
+  instructionText: {
+    color: 'white',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+
+  /* ===== CONTROL PANEL ===== */
+  controlPanelInline: {
+    flexDirection: 'row',
+    gap: 14,
+    marginTop: 12,
+  },
+
+  controlBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  controlText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 20,     
+  },
+
+  captureWrapper: {
+    position: 'absolute',
+    right: 20,
+    top: '45%',
+    alignItems: 'center',
+  },
+
+  bottomPanel: {
+    position: 'absolute',
+    bottom: 24,
+    width: '100%',
+    alignItems: 'center',
+  },
+
 });
