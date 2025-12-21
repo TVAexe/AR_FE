@@ -4,10 +4,33 @@ import {
   ViroARScene,
   ViroAmbientLight,
   ViroDirectionalLight,
+  ViroMaterials,
   ViroNode,
+  ViroQuad,
   ViroSpinner,
 } from '@reactvision/react-viro';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+
+// ViroMaterials.createMaterials({
+//   shadow: {
+//     diffuseColor: "rgba(0,0,0,0.35)",
+//     lightingModel: "Constant",
+//     // blendMode: "Add",
+//     // diffuseIntensity: 0.25, // điều chỉnh độ mờ
+//   },
+// });
+
+ViroMaterials.createMaterials({
+  shadow: {
+    diffuseColor: "rgba(0,0,0,0.35)",
+    lightingModel: "Constant",
+  },
+  shadowSoft: {
+    diffuseColor: "rgba(0,0,0,0.18)",
+    lightingModel: "Constant",
+  },
+});
+
 
 /**
  * Props truyền từ ARScreen
@@ -34,6 +57,8 @@ const MAX_SCALE = 1.2;
 const SCALE_STEP = 0.05;
 const ROTATE_STEP = 45;
 
+const SHADOW_BASE = 0.9; // thử 0.7 – 1.1 tuỳ model
+
 const Scene = (props: SceneProps) => {
   const { glbUrl, resetSignal, scaleSignal, rotateSignal } = props.arSceneNavigator.viroAppProps;
 
@@ -47,6 +72,8 @@ const Scene = (props: SceneProps) => {
   const currentRotationY = useRef(0);
 
   const [planeKey, setPlaneKey] = useState(0);
+
+  const shadowScale = scale[0] * SHADOW_BASE;
 
   // ===== RESET OBJECT =====
   useEffect(() => {
@@ -131,6 +158,38 @@ const Scene = (props: SceneProps) => {
             onLoadStart={() => setIsLoading(true)}
             onLoadEnd={() => setIsLoading(false)}
           />
+
+          {/* <ViroNode 
+            position={[0, -0.01, 0]}
+            scale={[scale[0] * 1.2, 1, scale[2] * 1.2]}
+          > 
+            <ViroQuad
+              // position={[0, 0, 0]}
+              rotation={[-90, 0, 0]}
+              width={1} 
+              height={1}
+              materials={["shadow"]}
+            />
+          </ViroNode> */}
+          {/* Shadow mềm ngoài */}
+          <ViroNode position={[0, -0.012, 0]} scale={[shadowScale * 1.3, 1, shadowScale * 1.3]}>
+            <ViroQuad
+              rotation={[-90, 0, 0]}
+              width={1}
+              height={1}
+              materials={["shadowSoft"]}
+            />
+          </ViroNode>
+
+          {/* Shadow đậm ở giữa */}
+          <ViroNode position={[0, -0.01, 0]} scale={[shadowScale, 1, shadowScale]}>
+            <ViroQuad
+              rotation={[-90, 0, 0]}
+              width={1}
+              height={1}
+              materials={["shadow"]}
+            />
+          </ViroNode>
         </ViroNode>
       </ViroARPlaneSelector>
     </ViroARScene>

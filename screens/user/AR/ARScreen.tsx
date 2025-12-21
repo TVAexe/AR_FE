@@ -148,10 +148,10 @@ export default function ARScreen({ route }: ARScreenProps) {
           {/* Instruction */}
           <View style={styles.instructionContainer}>
             <Text style={styles.instructionText}>
-              Tìm mặt phẳng và đặt vật thể
+              Move device slowly and tap at blue plane to place
             </Text>
             <Text style={styles.instructionText}>
-              Dùng 2 ngón tay để xoay / phóng to
+              Use buttons or 2 fingers to drag, 1 finger to drag
             </Text>
           </View>
 
